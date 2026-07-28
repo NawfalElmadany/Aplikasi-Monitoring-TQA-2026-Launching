@@ -1,0 +1,1026 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, Video, MoreHorizontal, ChevronRight, ChevronDown, User as UserIcon, X, UserX, BookOpen, Bookmark, XCircle, Calendar, Award, Star, Book, Loader2 } from 'lucide-react';
+import { Note, User, Student } from '../types';
+import Header from './Header';
+import FloatingHeaderCard from './FloatingHeaderCard';
+import { supabase } from '../lib/supabase';
+import { useActiveSchedule } from '../hooks/useActiveSchedule';
+import { loadStudentSetoranLogs, loadStudentAttendanceLogs } from '../services/appData';
+
+interface DashboardModernProps {
+    user: User;
+    students: Student[];
+    onNavigate: (page: string) => void;
+    latestNote: Note | null;
+    onMenuClick: () => void;
+    notifications?: Student[];
+    onDismissNotification?: (studentId: string) => void;
+    onSearchClick?: () => void;
+    unreadNotesCount?: number;
+    onResetData?: () => void;
+}
+
+const DashboardModern: React.FC<DashboardModernProps> = ({ 
+    user, 
+    students, 
+    onNavigate, 
+    latestNote,
+    onMenuClick,
+    notifications = [],
+    onDismissNotification,
+    onSearchClick,
+    unreadNotesCount = 0,
+    onResetData
+}) => {
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const isStudent = user.role === 'student' || user.role === 'siswa';
+
+    // Student specific states
+    const [logs, setLogs] = useState<any[]>([]);
+    const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+    const [loadingStudentData, setLoadingStudentData] = useState(isStudent);
+
+    // Find current student record
+    const currentStudent = useMemo(() => {
+        return students.find(s => 
+            (user.studentId && s.id === user.studentId) || 
+            s.name.toUpperCase() === user.name.toUpperCase()
+        );
+    }, [students, user]);
+
+    useEffect(() => {
+        if (!isStudent || !currentStudent) return;
+
+        let isMounted = true;
+        const fetchStudentData = async () => {
+            setLoadingStudentData(true);
+            try {
+                const [setoranData, attData] = await Promise.all([
+                    loadStudentSetoranLogs(currentStudent.id).catch(() => []),
+                    loadStudentAttendanceLogs(currentStudent.id).catch(() => [])
+                ]);
+
+                if (isMounted) {
+                    setLogs(setoranData);
+                    setAttendanceLogs(attData);
+                }
+            } catch (err) {
+                console.error("Failed to load student dashboard data:", err);
+            } finally {
+                if (isMounted) setLoadingStudentData(false);
+            }
+        };
+
+        void fetchStudentData();
+        return () => {
+            isMounted = false;
+        };
+    }, [isStudent, currentStudent]);
+
+    // Student stats
+    const studentStats = useMemo(() => {
+        if (!currentStudent) return null;
+
+        const totalSetoran = logs.length;
+        const scores = logs.filter(l => typeof l.score === 'number').map(l => l.score);
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : (currentStudent.lastScore || 0);
+
+        const totalAtt = attendanceLogs.length;
+        const presentAtt = attendanceLogs.filter(l => l.status === 'present').length;
+        const attRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 100;
+
+        return {
+            totalSetoran,
+            avgScore,
+            attRate
+        };
+    }, [currentStudent, logs, attendanceLogs]);
+
+    // Active Schedule Engine
+    // 1. Define complete teaching schedule
+    const jadwalMengajar = useMemo(() => ({
+        'Senin': [
+            { label: 'JP 1,2', className: 'Kelas 5C', time: 'TQA / 07:30 - 08:40', start: '07:30', end: '08:40' },
+            { label: 'JP 3,4', className: 'Kelas 6D', time: 'TQA / 08:40 - 09:50', start: '08:40', end: '09:50' },
+            { label: 'JP 5,6', className: 'Kelas 6C', time: 'TQA / 10:05 - 11:15', start: '10:05', end: '11:15' },
+            { label: 'JP 7,8', className: 'Kelas 5D', time: 'TQA / 11:15 - 12:25', start: '11:15', end: '12:25' },
+            { label: 'JP 9', className: 'Kelas 5B', time: 'TQA / 13:10 - 13:45', start: '13:10', end: '13:45' }
+        ],
+        'Selasa': [
+            { label: 'JP 1,2', className: 'Kelas 6C', time: 'TQA / 07:30 - 08:40', start: '07:30', end: '08:40' },
+            { label: 'JP 3,4', className: 'Kelas 5B', time: 'TQA / 08:40 - 09:50', start: '08:40', end: '09:50' },
+            { label: 'JP 5,6', className: 'Kelas 5C', time: 'TQA / 10:05 - 11:15', start: '10:05', end: '11:15' },
+            { label: 'JP 9', className: 'Kelas 6D', time: 'TQA / 13:10 - 13:45', start: '13:10', end: '13:45' },
+            { label: 'JP 10,11', className: 'Kelas 5D', time: 'TQA / 13:45 - 14:55', start: '13:45', end: '14:55' }
+        ],
+        'Rabu': [
+            { label: 'JP 1,2', className: 'Kelas 5B', time: 'TQA / 07:30 - 08:40', start: '07:30', end: '08:40' },
+            { label: 'JP 5,6', className: 'Kelas 5C', time: 'TQA / 10:05 - 11:15', start: '10:05', end: '11:15' },
+            { label: 'JP 7,8', className: 'Kelas 6D', time: 'TQA / 11:15 - 12:25', start: '11:15', end: '12:25' },
+            { label: 'JP 9', className: 'Kelas 6C', time: 'TQA / 13:10 - 13:45', start: '13:10', end: '13:45' },
+            { label: 'JP 10,11', className: 'Kelas 5D', time: 'TQA / 13:45 - 14:55', start: '13:45', end: '14:55' }
+        ],
+        'Kamis': [
+            { label: 'JP 3,4', className: 'Kelas 5B', time: 'TQA / 08:40 - 09:50', start: '08:40', end: '09:50' },
+            { label: 'JP 5,6', className: 'Kelas 6C', time: 'TQA / 10:05 - 11:15', start: '10:05', end: '11:15' },
+            { label: 'JP 7,8', className: 'Kelas 6D', time: 'TQA / 11:15 - 12:25', start: '11:15', end: '12:25' },
+            { label: 'JP 9', className: 'Kelas 5C', time: 'TQA / 13:10 - 13:45', start: '13:10', end: '13:45' },
+            { label: 'JP 11', className: 'Kelas 5D', time: 'TQA / 14:20 - 14:55', start: '14:20', end: '14:55' }
+        ]
+    }), []);
+
+    // 2. Active Day detection
+    const currentDayOfWeek = useMemo(() => {
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const dayName = days[new Date().getDay()];
+        return ['Senin', 'Selasa', 'Rabu', 'Kamis'].includes(dayName) ? dayName : 'Senin';
+    }, []);
+
+    const [hariAktif, setHariAktif] = useState<string | null>(currentDayOfWeek);
+
+    // 3. Active Schedule Engine
+    const jadwalHariIni = useMemo(() => {
+        const targetDay = currentDayOfWeek as keyof typeof jadwalMengajar;
+        const currentMengajar = jadwalMengajar[targetDay] || jadwalMengajar['Senin'];
+        return currentMengajar.map(item => ({
+            kelas_id: item.className.replace('Kelas ', ''),
+            waktu_mulai: item.start,
+            waktu_selesai: item.end,
+            mata_pelajaran: item.className === 'Kelas 6D' ? 'Gharib' : 'Tahfidz',
+            kategori: item.className === 'Kelas 6D' ? 'Gharib' : undefined
+        }));
+    }, [currentDayOfWeek, jadwalMengajar]);
+
+    const { activeClassId, previousClassId } = useActiveSchedule(jadwalHariIni);
+    const targetClassId = activeClassId ? activeClassId : previousClassId;
+    const isPastClass = !activeClassId && !!previousClassId;
+
+    const [lastMurojaah, setLastMurojaah] = useState<{ class: string; surah: string } | null>(null);
+
+    // Gharib Daily Highlight State
+    const [jadwalGharibHariIni, setJadwalGharibHariIni] = useState<any | null>(null);
+    const [dataGharibTerakhir, setDataGharibTerakhir] = useState<any | null>(null);
+
+    // Scan daily schedule for Gharib on mount
+    useEffect(() => {
+        const sesiGharib = jadwalHariIni.find(j => j.mata_pelajaran === 'Gharib' || j.kategori === 'Gharib');
+        if (sesiGharib) {
+            setJadwalGharibHariIni(sesiGharib);
+        } else {
+            setJadwalGharibHariIni(null);
+        }
+    }, [jadwalHariIni]);
+
+    // Fetch Murojaah from Supabase or localStorage fallback
+    useEffect(() => {
+        if (!targetClassId) {
+            setLastMurojaah(null);
+            return;
+        }
+
+        const fetchData = async () => {
+            if (supabase) {
+                // 1. Fetch Murojaah from Supabase
+                try {
+                    const { data, error } = await supabase
+                        .from('setoran_hafalan')
+                        .select('*')
+                        .eq('kelas_id', targetClassId)
+                        .eq('jenis', 'murojaah')
+                        .order('tanggal', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (!error && data) {
+                        setLastMurojaah({
+                            class: data.kelas_id,
+                            surah: data.detail_ayat || data.current_surah || data.material || 'Setoran Murojaah'
+                        });
+                    } else {
+                        // Fallback to actual schema table: setoran
+                        const { data: realData, error: realError } = await supabase
+                            .from('setoran')
+                            .select('*')
+                            .eq('class_name', targetClassId)
+                            .eq('type', 'Hafalan')
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+                        
+                        if (!realError && realData) {
+                            setLastMurojaah({
+                                class: realData.class_name,
+                                surah: realData.current_surah
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to query setoran_hafalan/setoran:', e);
+                }
+            }
+
+            // Fallback to localStorage logs if supabase is offline or returned empty
+            setLastMurojaah(prev => {
+                if (prev) return prev;
+                try {
+                    const logs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+                    const classLogs = logs.filter((l: any) => l.class === targetClassId && l.type === 'Hafalan');
+                    const lastHafalan = classLogs.sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
+                    if (lastHafalan) {
+                        return {
+                            class: lastHafalan.class,
+                            surah: lastHafalan.currentSurah
+                        };
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+                return null;
+            });
+        };
+
+        void fetchData();
+    }, [targetClassId]);
+
+    // Fetch Gharib dynamic daily highlight
+    useEffect(() => {
+        if (!jadwalGharibHariIni) {
+            setDataGharibTerakhir(null);
+            return;
+        }
+
+        const kelasId = jadwalGharibHariIni.kelas_id;
+
+        const fetchGharib = async () => {
+            let dbData = null;
+
+            if (supabase) {
+                try {
+                    // Try user's requested query on gharib_klasikal
+                    const { data, error } = await supabase
+                        .from('gharib_klasikal')
+                        .select('*')
+                        .eq('kelas_id', kelasId)
+                        .order('tanggal', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (!error && data) {
+                        dbData = data;
+                    }
+                } catch (e) {
+                    console.error('Failed to query gharib_klasikal from Supabase:', e);
+                }
+
+                if (!dbData) {
+                    try {
+                        // Fallback to actual schema table: jurnal_gharib
+                        const { data, error } = await supabase
+                            .from('jurnal_gharib')
+                            .select('*')
+                            .eq('class_name', kelasId)
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        if (!error && data) {
+                            dbData = data;
+                        }
+                    } catch (e) {
+                        console.error('Failed to query jurnal_gharib from Supabase:', e);
+                    }
+                }
+            }
+
+            // Fallback to local storage logs
+            if (!dbData) {
+                try {
+                    const logs = JSON.parse(localStorage.getItem('tqa_gharib_entries') || '[]');
+                    const classLogs = logs.filter((l: any) => (l.className === kelasId || l.class_name === kelasId));
+                    const lastGharibLog = classLogs[0]; // Assuming pre-sorted desc
+                    if (lastGharibLog) {
+                        dbData = lastGharibLog;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            setDataGharibTerakhir(dbData);
+        };
+
+        void fetchGharib();
+    }, [jadwalGharibHariIni]);
+
+    useEffect(() => {
+        const mainContainer = document.querySelector('main');
+        const handleScroll = () => {
+            if (mainContainer) {
+                setIsScrolled(mainContainer.scrollTop > 10);
+            }
+        };
+
+        if (mainContainer) {
+            mainContainer.addEventListener('scroll', handleScroll);
+            handleScroll();
+        }
+
+        return () => {
+            if (mainContainer) {
+                mainContainer.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, []);
+
+    const metrics = useMemo(() => {
+        // 1. Bimbingan Khusus
+        const bimbinganCount = students.filter(s => s.requiresAttention).length;
+        
+        // 2. Murojaah Terakhir
+        let murojaahClass = "-";
+        let murojaahSurah = "Belum ada murojaah";
+        try {
+            const logs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            const lastHafalan = logs
+                .filter((l: any) => l.type === 'Hafalan')
+                .sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
+            if (lastHafalan) {
+                murojaahClass = `Kelas ${lastHafalan.class}`;
+                murojaahSurah = lastHafalan.currentSurah;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        // 3. Gharib Terakhir
+        let gharibClass = "-";
+        let gharibMaterial = "Belum ada materi";
+        try {
+            const gharibEntries = JSON.parse(localStorage.getItem('tqa_gharib_entries') || '[]');
+            const lastGharib = gharibEntries[0];
+            if (lastGharib) {
+                gharibClass = `Kelas ${lastGharib.className || lastGharib.class_name}`;
+                gharibMaterial = lastGharib.material;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        // 4. Belum Setor Kemarin (H-1)
+        let belumSetorCount = students.length;
+        try {
+            const logs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayDateString = yesterday.toLocaleDateString('en-CA'); // "YYYY-MM-DD" local time
+
+            const yesterdaySetoranStudentIds = new Set(
+                logs
+                    .filter((l: any) => {
+                        if (!l.date) return false;
+                        const localDateStr = new Date(l.date).toLocaleDateString('en-CA');
+                        return localDateStr === yesterdayDateString;
+                    })
+                    .map((l: any) => l.studentId)
+            );
+            
+            belumSetorCount = Math.max(0, students.length - yesterdaySetoranStudentIds.size);
+        } catch (e) {
+            console.error(e);
+        }
+
+        return {
+            bimbingan: `${bimbinganCount} Siswa`,
+            murojaahClass,
+            murojaahSurah,
+            gharibClass,
+            gharibMaterial,
+            belumSetor: belumSetorCount === 0 ? "Semua Sudah Setor" : `${belumSetorCount} Siswa`
+        };
+    }, [students]);
+
+
+
+    const getGharibDetailText = () => {
+        if (!dataGharibTerakhir) return "Belum ada catatan hari ini";
+        
+        if (dataGharibTerakhir.nomor_halaman) {
+            const page = dataGharibTerakhir.nomor_halaman;
+            const mat = dataGharibTerakhir.nama_materi || dataGharibTerakhir.keterangan || dataGharibTerakhir.material || "";
+            return `Hal ${page} - ${mat}`;
+        }
+        
+        const mat = dataGharibTerakhir.material || dataGharibTerakhir.materi_halaman || "";
+        const note = dataGharibTerakhir.notes || dataGharibTerakhir.catatan || "";
+        
+        return note ? `${mat} (${note})` : mat || "Materi belum dicatat";
+    };
+
+    if (isStudent) {
+        return (
+            <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+                {/* Header Section (Floating Card Style on Desktop, Fixed Top Bar on Mobile) */}
+                <div className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 dark:bg-[#09120E]/90 backdrop-blur-md px-4 py-4 border-b border-slate-100 dark:border-[#1A2E24] md:hidden">
+                    <Header
+                        user={user}
+                        onMenuClick={onMenuClick}
+                        notifications={notifications}
+                        onDismissNotification={onDismissNotification}
+                        onSearchClick={undefined} // No search for student
+                        flat={true}
+                        title="Dashboard Siswa"
+                        subtitle="Pantau perkembangan hafalan dan target belajar pribadi Anda."
+                        showGreeting={true}
+                        unreadNotesCount={unreadNotesCount}
+                    />
+                </div>
+                
+                <div className="hidden md:block">
+                    <FloatingHeaderCard className="w-full lg:max-w-none lg:mx-0">
+                        <Header
+                            user={user}
+                            onMenuClick={onMenuClick}
+                            notifications={notifications}
+                            onDismissNotification={onDismissNotification}
+                            onSearchClick={undefined} // No search for student
+                            flat={true}
+                            title="Dashboard Siswa"
+                            subtitle="Pantau perkembangan hafalan dan target belajar pribadi Anda."
+                            showGreeting={true}
+                            unreadNotesCount={unreadNotesCount}
+                        />
+                    </FloatingHeaderCard>
+                </div>
+
+                {/* Area Konten Scroll Mandiri */}
+                <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-32 md:pt-6 -mx-4 sm:-mx-8 bg-slate-50 dark:bg-dark-bg">
+                    <div className="flex flex-col gap-6 w-full px-4 md:px-0 lg:px-8">
+                        
+                        {/* ===== WELCOME BANNER FOR STUDENT ===== */}
+                        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-700 to-teal-500 rounded-3xl p-5 md:p-8 shadow-md w-full">
+                            <div className="absolute top-0 right-0 -mr-12 -mt-12 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl z-0 pointer-events-none"></div>
+                            <div className="absolute -bottom-10 right-24 w-48 h-48 rounded-full border-4 border-white opacity-10 z-0 pointer-events-none"></div>
+                            <div className="relative z-10">
+                                <h1 className="text-2xl font-bold text-white mb-2">
+                                    Assalamualaikum, <span className="text-amber-400">{currentStudent?.name || user.name}</span>!
+                                </h1>
+                                <p className="text-emerald-50 text-xs md:text-sm max-w-xl leading-relaxed line-clamp-2">
+                                    Tetap semangat menghafal Al-Qur'an hari ini ya! Semoga dimudahkan dalam murojaah dan menambah setoran hafalanmu.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Student Metrics Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
+                            {/* Card 1: Hafalan Terakhir */}
+                            <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center w-full gap-2">
+                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Hafalan Terakhir</span>
+                                    <div className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                        <Book size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                    </div>
+                                </div>
+                                <div className="mt-2 sm:mt-4">
+                                    <h4 className="text-base sm:text-xl font-black text-slate-800 dark:text-white truncate">
+                                        {currentStudent?.currentSurah || '-'}
+                                    </h4>
+                                    <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-1 sm:mt-2 font-bold truncate">
+                                        {currentStudent?.currentJuz ? `Juz ${currentStudent.currentJuz}` : 'Tahfidz Program'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Perkembangan Tartili */}
+                            <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center w-full gap-2">
+                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Perkembangan Tartili</span>
+                                    <div className="text-teal-600 dark:text-teal-500 bg-teal-50 dark:bg-teal-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                        <Clock size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                    </div>
+                                </div>
+                                <div className="mt-2 sm:mt-4">
+                                    <h4 className="text-base sm:text-xl font-black text-slate-800 dark:text-white truncate">
+                                        {currentStudent?.iqraLevel ? `Jilid ${currentStudent.iqraLevel}` : 'Al-Qur\'an'}
+                                    </h4>
+                                    <p className="text-[10px] sm:text-xs text-teal-600 dark:text-teal-400 mt-1 sm:mt-2 font-bold truncate">
+                                        {currentStudent?.page ? `Halaman ${currentStudent.page}` : '-'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Kehadiran */}
+                            <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center w-full gap-2">
+                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Kehadiran</span>
+                                    <div className="text-indigo-600 dark:text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                        <Calendar size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                    </div>
+                                </div>
+                                <div className="mt-2 sm:mt-4">
+                                    <h4 className="text-lg sm:text-3xl font-black text-slate-800 dark:text-white">
+                                        {studentStats?.attRate}%
+                                    </h4>
+                                    <p className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 mt-1 sm:mt-2 font-bold truncate">
+                                        Rekap kehadiran semester
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Card 4: Rata-rata Nilai */}
+                            <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                                <div className="flex justify-between items-center w-full gap-2">
+                                    <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Rata-rata Nilai</span>
+                                    <div className="text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                        <Award size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                    </div>
+                                </div>
+                                <div className="mt-2 sm:mt-4">
+                                    <h4 className="text-lg sm:text-3xl font-black text-slate-800 dark:text-white">
+                                        {studentStats?.avgScore}
+                                    </h4>
+                                    <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 mt-1 sm:mt-2 font-bold uppercase tracking-wider truncate">
+                                        {currentStudent?.status || 'Jayyid'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Setoran Logs Table */}
+                        <div className="bg-white dark:bg-[#121F18] border border-slate-200 dark:border-[#1A2E24] rounded-3xl p-6 shadow-sm">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Riwayat Setoran Terbaru</h3>
+                            {loadingStudentData ? (
+                                <div className="py-12 text-center text-slate-400">
+                                    <Loader2 className="animate-spin mx-auto mb-2 text-emerald-600" size={24} />
+                                    <span>Memuat riwayat setoran...</span>
+                                </div>
+                            ) : logs.length > 0 ? (
+                                 <div className="w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                                     <table className="w-full min-w-max text-sm text-left border-collapse">
+                                         <thead>
+                                             <tr className="border-b border-slate-100 dark:border-[#1A2E24] text-slate-400 dark:text-[#8BA398] font-bold text-xs uppercase tracking-wider">
+                                                 <th className="pb-3 pr-4 whitespace-nowrap">Tanggal</th>
+                                                 <th className="pb-3 pr-4 whitespace-nowrap">Tipe</th>
+                                                 <th className="pb-3 pr-4 whitespace-nowrap">Materi</th>
+                                                 <th className="pb-3 px-4 text-center whitespace-nowrap">Nilai</th>
+                                                 <th className="pb-3 pl-4 whitespace-nowrap">Catatan Ustadz</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody className="divide-y divide-slate-100 dark:divide-[#1A2E24]">
+                                             {logs.slice(0, 5).map((log) => {
+                                                 const formattedDate = new Date(log.date).toLocaleDateString('id-ID', {
+                                                     day: 'numeric',
+                                                     month: 'short',
+                                                     year: 'numeric'
+                                                 });
+                                                 return (
+                                                     <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1C3026]/10 transition-colors">
+                                                         <td className="py-3.5 pr-4 font-bold text-slate-700 dark:text-[#E2EAE5] whitespace-nowrap">
+                                                             {formattedDate}
+                                                         </td>
+                                                         <td className="py-3.5 pr-4 whitespace-nowrap">
+                                                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                                                 log.type === 'Hafalan' 
+                                                                     ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400' 
+                                                                     : 'bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400'
+                                                             }`}>
+                                                                 {log.type}
+                                                             </span>
+                                                         </td>
+                                                         <td className="py-3.5 pr-4 font-bold text-slate-800 dark:text-white">
+                                                             {log.type === 'Hafalan' 
+                                                                 ? `${log.currentSurah}${log.currentJuz ? ` (Juz ${log.currentJuz})` : ''}` 
+                                                                 : (log.currentSurah || `Jilid ${log.iqraLevel || '-'} Hal. ${log.page || '-'}`)}
+                                                         </td>
+                                                         <td className="py-3.5 px-4 text-center font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                                             {log.score}
+                                                         </td>
+                                                         <td className="py-3.5 pl-4 text-slate-500 dark:text-[#8BA398] text-xs max-w-xs truncate" title={log.notes}>
+                                                             {log.notes || '-'}
+                                                         </td>
+                                                     </tr>
+                                                 );
+                                             })}
+                                         </tbody>
+                                     </table>
+                                </div>
+                            ) : (
+                                <div className="py-12 text-center text-slate-400">
+                                    <BookOpen className="mx-auto mb-2 text-slate-300" size={32} />
+                                    <span>Belum ada riwayat setoran tercatat.</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+            {/* Header Section (Floating Card Style on Desktop, Fixed Top Bar on Mobile) */}
+            <div className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 dark:bg-[#09120E]/90 backdrop-blur-md px-4 py-4 border-b border-slate-100 dark:border-[#1A2E24] md:hidden">
+                <Header
+                    user={user}
+                    onMenuClick={onMenuClick}
+                    notifications={notifications}
+                    onDismissNotification={onDismissNotification}
+                    onSearchClick={onSearchClick}
+                    flat={true}
+                    title="Dashboard"
+                    subtitle="Pantau aktivitas hafalan dan jadwal Anda di sini."
+                    showGreeting={true}
+                />
+            </div>
+            
+            <div className="hidden md:block">
+                <FloatingHeaderCard className="w-full lg:max-w-none lg:mx-0">
+                    <Header
+                        user={user}
+                        onMenuClick={onMenuClick}
+                        notifications={notifications}
+                        onDismissNotification={onDismissNotification}
+                        onSearchClick={onSearchClick}
+                        flat={true}
+                        title="Dashboard"
+                        subtitle="Pantau aktivitas hafalan dan jadwal Anda di sini."
+                        showGreeting={true}
+                    />
+                </FloatingHeaderCard>
+            </div>
+
+            {/* Area Konten Scroll Mandiri */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-32 md:pt-6 -mx-4 sm:-mx-8 bg-slate-50 dark:bg-dark-bg">
+                <div className="flex flex-col gap-4 w-full px-4 md:px-0 lg:px-8">
+                    {/* ===== AREA BANNER ZAMRUD ===== */}
+                    <div className="relative overflow-hidden bg-gradient-to-r from-emerald-700 to-teal-500 rounded-2xl p-5 md:p-8 shadow-md w-full">
+                    {/* Ornamen Abstrak 1: Cahaya berpendar di kanan atas */}
+                    <div className="absolute top-0 right-0 -mr-12 -mt-12 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl z-0 pointer-events-none"></div>
+                    
+                    {/* Ornamen Abstrak 2: Garis lingkaran di kanan bawah */}
+                    <div className="absolute -bottom-10 right-24 w-48 h-48 rounded-full border-4 border-white opacity-10 z-0 pointer-events-none"></div>
+
+                    {/* Konten Teks Banner */}
+                    <div className="relative z-10">
+                        <h1 className="text-2xl font-bold text-white mb-2">
+                            Selamat Datang Kembali, <span className="text-amber-400">
+                                {user.name.split(' ')[0].toLowerCase().startsWith('ustadz') && user.name.split(' ').length > 1
+                                    ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]}`
+                                    : user.name.split(' ')[0]}
+                            </span>
+                        </h1>
+                        <p className="text-emerald-50 text-xs md:text-sm max-w-xl line-clamp-2">
+                            Hari ini kamu ada jadwal mengajar di jam pertama, jangan sampai telat ya!
+                            Jangan lupa bawa perlengkapan mengajar. Semangat! :)
+                        </p>
+                    </div>
+                </div>
+
+                {/* Grid Metrik Operasional Utama */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
+                    {/* Kartu 1: Bimbingan Khusus */}
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-left w-full bg-white dark:bg-[#16271E] border border-gray-200/80 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                    >
+                        <div className="flex justify-between items-center w-full gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Bimbingan Khusus</span>
+                            <div className="text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                <UserX size={16} className="sm:w-[18px] sm:h-[18px]" />
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-4">
+                            <h4 className="text-lg sm:text-3xl font-black text-slate-800 dark:text-white truncate">{metrics.bimbingan}</h4>
+                            <p className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400/80 mt-1 sm:mt-2 truncate">Perlu pantauan pekan ini</p>
+                        </div>
+                    </button>
+
+                    {/* Kartu 2: Murojaah Terakhir */}
+                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className="flex justify-between items-center w-full gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Murojaah Terakhir</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                {isPastClass && (
+                                    <span className="bg-slate-100 dark:bg-emerald-950/40 text-slate-500 dark:text-slate-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                        Selesai
+                                    </span>
+                                )}
+                                <div className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg">
+                                    <BookOpen size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-4 min-w-0">
+                            {targetClassId ? (
+                                <>
+                                    <h4 className={`text-lg sm:text-2xl font-black truncate ${
+                                        isPastClass 
+                                            ? 'text-slate-500 dark:text-slate-400' 
+                                            : 'text-slate-800 dark:text-white'
+                                    }`}>
+                                        Kelas {targetClassId}
+                                    </h4>
+                                    <p className={`text-[10px] sm:text-xs mt-1 sm:mt-2 truncate ${
+                                        isPastClass
+                                            ? 'text-slate-400 dark:text-slate-500'
+                                            : 'text-emerald-600 dark:text-emerald-400/80'
+                                    }`} title={lastMurojaah?.surah || "Belum ada setoran"}>
+                                        {lastMurojaah?.surah || "Belum ada setoran"}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h4 className="text-sm sm:text-xl font-bold text-slate-400 dark:text-slate-500 truncate">Menunggu Jadwal</h4>
+                                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 mt-1 sm:mt-2 truncate">-</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Kartu 3: Gharib Terakhir */}
+                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className="flex justify-between items-center w-full gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Gharib Terakhir</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                {jadwalGharibHariIni && (
+                                    <span className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                        Hari Ini
+                                    </span>
+                                )}
+                                <div className="text-teal-600 dark:text-teal-500 bg-teal-50 dark:bg-teal-500/10 p-1.5 sm:p-2 rounded-lg">
+                                    <Bookmark size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-4 min-w-0">
+                            {jadwalGharibHariIni ? (
+                                <>
+                                    <h4 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white truncate">
+                                        Kelas {jadwalGharibHariIni.kelas_id}
+                                    </h4>
+                                    <p className="text-[10px] sm:text-xs text-teal-600 dark:text-teal-400/80 mt-1 sm:mt-2 truncate font-semibold" title={getGharibDetailText()}>
+                                        {getGharibDetailText()}
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h4 className="text-sm sm:text-xl font-bold text-slate-400 dark:text-slate-500 truncate">Tidak ada jadwal</h4>
+                                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1 sm:mt-2 truncate">-</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Kartu 4: Belum Setor Kemarin */}
+                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div className="flex justify-between items-center w-full gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Belum Setor (H-1)</span>
+                            <div className="text-rose-600 dark:text-rose-500 bg-rose-50 dark:bg-rose-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                                <XCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-4">
+                            <h4 className="text-lg sm:text-3xl font-black text-slate-800 dark:text-white truncate">{metrics.belumSetor}</h4>
+                            <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400/80 mt-1 sm:mt-2 truncate">Butuh *follow-up* hari ini</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Schedule Section (Jadwal Mengajar) */}
+                <div className="w-full">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white">Jadwal Mengajar</h3>
+                    </div>
+
+                    {/* Day Selectors Grid (Kotak-kotak) */}
+                    <div className="grid grid-cols-4 gap-2.5 sm:gap-4 w-full mb-5">
+                        {(['Senin', 'Selasa', 'Rabu', 'Kamis'] as const).map((hari) => {
+                            const isActive = hariAktif === hari;
+                            return (
+                                <button
+                                    key={hari}
+                                    onClick={() => setHariAktif(hari)}
+                                    className={`flex flex-col items-center justify-center p-3.5 sm:p-5 rounded-2xl border text-center transition-all duration-300 cursor-pointer focus:outline-none ${
+                                        isActive
+                                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-500/80 dark:text-emerald-400 font-bold shadow-[0_4px_20px_rgba(16,185,129,0.08)] ring-1 ring-emerald-500/30'
+                                            : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50 dark:bg-[#16271E] dark:border-[#1F382B] dark:text-slate-300 dark:hover:bg-[#1C2E24]/30'
+                                    }`}
+                                >
+                                    <span className="text-sm sm:text-base font-semibold">{hari}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Schedules List for Active Day */}
+                    {hariAktif && (
+                        <div className="w-full flex flex-col gap-3">
+                            {jadwalMengajar[hariAktif as keyof typeof jadwalMengajar].map((schedule) => {
+                                const isActive = currentDayOfWeek === hariAktif && schedule.className.replace('Kelas ', '') === activeClassId;
+                                return (
+                                    <div 
+                                        key={schedule.className}
+                                        onClick={() => setIsScheduleModalOpen(true)}
+                                        className={`w-full flex justify-between items-center p-4 bg-white dark:bg-[#16271E] border rounded-2xl shadow-sm hover:shadow-md hover:bg-slate-50/50 dark:hover:bg-[#1C2E24]/30 transition-all cursor-pointer ${
+                                            isActive 
+                                                ? 'border-emerald-500 dark:border-emerald-500/80 ring-1 ring-emerald-500/30' 
+                                                : 'border-gray-200/80 dark:border-[#1F382B]'
+                                        }`}
+                                    >
+                                        {/* Left Side: Class & Time */}
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${isActive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 bg-slate-100 dark:bg-white/5'}`}>
+                                                <Clock size={18} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-[#E2EAE5] text-sm">{schedule.className}</h4>
+                                                <p className="text-xs text-slate-500 dark:text-[#8BA398]">{schedule.time.split(' / ')[1] || schedule.time}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Right Side: Label */}
+                                        <div className="flex items-center gap-3">
+                                            {schedule.label && (
+                                                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md ${
+                                                    isActive 
+                                                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/30' 
+                                                        : 'text-slate-400 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5'
+                                                }`}>
+                                                    {schedule.label}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+
+
+            {/* Modal Detail Jadwal */}
+            {isScheduleModalOpen && (
+                <div className="fixed inset-0 z-[200] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-dark-card rounded-2xl w-full max-w-md p-6 shadow-2xl relative border border-slate-100 dark:border-dark-border animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header Close button */}
+                        <button
+                            onClick={() => setIsScheduleModalOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-full hover:bg-slate-100 dark:hover:bg-dark-card-hover transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-4">
+                            Jadwal Mengajar - {hariAktif || 'Senin'}
+                        </h3>
+
+                        {/* UI Timeline Jadwal Vertikal */}
+                        <div className="flex flex-col gap-3">
+                            {(jadwalMengajar[hariAktif as keyof typeof jadwalMengajar] || jadwalMengajar['Senin']).map((schedule, index) => {
+                                const timeOnly = schedule.time.split(' / ')[1] || schedule.time;
+                                const isScheduleActive = currentDayOfWeek === (hariAktif || 'Senin') && schedule.className.replace('Kelas ', '') === activeClassId;
+                                const scheduleNum = String(index + 1).padStart(2, '0');
+                                return (
+                                    <div 
+                                        key={schedule.className} 
+                                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                            isScheduleActive 
+                                                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-500/30' 
+                                                : 'bg-white dark:bg-dark-card border-slate-100 dark:border-dark-border hover:bg-slate-50/50 dark:hover:bg-dark-card-hover'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            {/* Clock Icon or number indicator */}
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                isScheduleActive 
+                                                    ? 'bg-emerald-500 text-white' 
+                                                    : 'bg-slate-100 dark:bg-dark-card-hover text-slate-500 dark:text-slate-400'
+                                            }`}>
+                                                {scheduleNum}
+                                            </div>
+                                            <div>
+                                                <p className={`text-sm font-bold ${
+                                                    isScheduleActive ? 'text-emerald-900 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-300'
+                                                }`}>
+                                                    {schedule.className}
+                                                </p>
+                                                <p className="text-xs text-slate-400">{timeOnly}</p>
+                                            </div>
+                                        </div>
+
+                                        {isScheduleActive ? (
+                                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                Sekarang
+                                            </span>
+                                        ) : schedule.label ? (
+                                            <span className="text-[10px] font-medium text-slate-400 bg-slate-50 dark:bg-dark-card-hover px-2 py-0.5 rounded-full">
+                                                {schedule.label}
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Bimbingan Khusus */}
+            {isModalOpen && (
+                <div 
+                    onClick={() => setIsModalOpen(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity p-4 animate-in fade-in duration-200"
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white dark:bg-[#16271E] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100 border border-slate-100 dark:border-[#1F382B] animate-in zoom-in-95 duration-200"
+                    >
+                        {/* Header Modal & Tombol Tutup */}
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-emerald-900/30 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                                Rincian Bimbingan Khusus
+                            </h3>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-[#1C3026] focus:outline-none"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Area Konten (Body) */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                            <div className="divide-y divide-slate-100 dark:divide-emerald-900/10">
+                                {(() => {
+                                    const bimbinganStudents = students.filter(s => s.requiresAttention);
+                                    if (bimbinganStudents.length > 0) {
+                                        return bimbinganStudents.map((student) => (
+                                            <div key={student.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0 gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <img 
+                                                        src={student.avatar} 
+                                                        alt={student.name} 
+                                                        className="w-10 h-10 rounded-full border border-slate-200 dark:border-[#1F382B] object-cover" 
+                                                    />
+                                                    <div>
+                                                        <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">{student.name}</h5>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{student.notes || 'Perlu bimbingan khusus'}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 shrink-0">
+                                                    Kelas {student.class}
+                                                </span>
+                                            </div>
+                                        ));
+                                    } else {
+                                        return (
+                                            <>
+                                                <div className="py-3 flex items-center justify-between first:pt-0 gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-emerald-950 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-emerald-400 shrink-0">AH</div>
+                                                        <div>
+                                                            <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">Ahmad Hanafi</h5>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Perlu bimbingan tajwid mad</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 shrink-0">Kelas 5B</span>
+                                                </div>
+                                                <div className="py-3 flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-emerald-950 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-emerald-400 shrink-0">ZF</div>
+                                                        <div>
+                                                            <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">Zaidan Fathur</h5>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Mengulang halaman 12</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 shrink-0">Kelas 5C</span>
+                                                </div>
+                                                <div className="py-3 flex items-center justify-between last:pb-0 gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-emerald-950 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-emerald-400 shrink-0">HM</div>
+                                                        <div>
+                                                            <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">Humaira Mufida</h5>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Lancar, butuh penguatan hafalan</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 shrink-0">Kelas 5D</span>
+                                                </div>
+                                            </>
+                                        );
+                                    }
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default DashboardModern;
