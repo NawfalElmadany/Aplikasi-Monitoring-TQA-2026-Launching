@@ -393,6 +393,35 @@ export const createSetoranLog = async (log: any): Promise<any> => {
   return mapSetoranLogFromRow(data);
 };
 
+export const updateSetoranLog = async (log: any): Promise<any> => {
+  const client = ensureSupabase();
+  const { data, error } = await client
+    .from('setoran')
+    .update(mapSetoranLogToRow(log))
+    .eq('id', log.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSetoranLogFromRow(data);
+};
+
+export const deleteSetoranLog = async (id: string | number): Promise<void> => {
+  const client = ensureSupabase();
+  const { error } = await client
+    .from('setoran')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+};
+
+
 export const loadSetoranLogs = async (date: string, className: string): Promise<any[]> => {
   const client = ensureSupabase();
   // Construct local start and end times, then convert to UTC ISO strings

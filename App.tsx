@@ -1031,6 +1031,7 @@ function App() {
                        setPreSelectedStudent(student);
                        setActivePage('input_setoran');
                     }}
+                    onUpdateStudent={handleUpdateStudent}
                  />
               );
          case 'catatan':

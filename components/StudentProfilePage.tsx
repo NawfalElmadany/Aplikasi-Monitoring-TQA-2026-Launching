@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, PlusCircle, BookOpen, Star, MessageSquare, Award, TrendingUp, CalendarCheck } from 'lucide-react';
+import { ArrowLeft, PlusCircle, BookOpen, Star, MessageSquare, Award, TrendingUp, CalendarCheck, Edit, Trash2 } from 'lucide-react';
 import { Student, Teacher, User } from '../types';
-import { loadStudentSetoranLogs, loadStudentAttendanceLogs, getAssignedTeacher } from '../services/appData';
+import { loadStudentSetoranLogs, loadStudentAttendanceLogs, getAssignedTeacher, updateSetoranLog, deleteSetoranLog } from '../services/appData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import Header from './Header';
+import EditSetoranModal from './EditSetoranModal';
 
 interface StudentProfilePageProps {
     student: Student | null;
@@ -15,7 +16,9 @@ interface StudentProfilePageProps {
     onSearchClick?: () => void;
     onBack: () => void;
     onInputSetoran: (student: Student) => void;
+    onUpdateStudent?: (studentId: string, updatedData: Partial<Student>) => Promise<void>;
 }
+
 
 const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ 
     student, 
@@ -26,13 +29,129 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
     onDismissNotification,
     onSearchClick,
     onBack, 
-    onInputSetoran 
+    onInputSetoran,
+    onUpdateStudent
 }) => {
     const [logs, setLogs] = useState<any[]>([]);
     const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'tahfidz' | 'tartili' | 'kehadiran'>(() => {
         return student?.type === 'Tartili' ? 'tartili' : 'tahfidz';
     });
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedLogForEdit, setSelectedLogForEdit] = useState<any | null>(null);
+
+    const syncStudentProgressFromLogs = async (studentId: string, remainingLogs: any[]) => {
+        if (!onUpdateStudent) return;
+        
+        // Sort remaining logs by date descending (latest first)
+        const sorted = [...remainingLogs].sort((a: any, b: any) => b.date.localeCompare(a.date));
+        
+        if (sorted.length > 0) {
+            const latestLog = sorted[0];
+            const scoreVal = latestLog.score || latestLog.lastScore;
+            
+            const logStatus = (() => {
+                if (latestLog.status) return latestLog.status;
+                const scoreNum = typeof scoreVal === 'number' ? scoreVal : parseInt(scoreVal);
+                if (!isNaN(scoreNum)) {
+                    if (scoreNum >= 92) return 'Mumtaz';
+                    if (scoreNum >= 83) return 'Jayyid Jiddan';
+                    if (scoreNum >= 80) return 'Jayyid';
+                    return 'Perlu Bimbingan';
+                }
+                return 'Jayyid';
+            })();
+
+            const updateData: Partial<Student> = {
+                type: latestLog.type,
+                currentJuz: latestLog.currentJuz || undefined,
+                currentSurah: latestLog.currentSurah,
+                iqraLevel: latestLog.iqraLevel || undefined,
+                page: latestLog.page || undefined,
+                status: logStatus,
+                lastScore: typeof scoreVal === 'number' ? scoreVal : scoreVal ? parseInt(scoreVal) : undefined,
+                notes: latestLog.notes || undefined,
+                requiresAttention: latestLog.requiresAttention || false,
+                lastUpdate: 'Baru saja'
+            };
+            await onUpdateStudent(studentId, updateData);
+        } else {
+            // Revert to default/empty values if no logs left
+            const updateData: Partial<Student> = {
+                currentSurah: '-',
+                currentJuz: undefined,
+                iqraLevel: undefined,
+                page: undefined,
+                status: 'Jayyid',
+                lastScore: undefined,
+                notes: '',
+                requiresAttention: false,
+                lastUpdate: 'Belum ada setoran'
+            };
+            await onUpdateStudent(studentId, updateData);
+        }
+    };
+
+    const handleDeleteLog = async (logId: string | number) => {
+        if (!window.confirm('Apakah Anda yakin ingin menghapus catatan setoran ini?')) {
+            return;
+        }
+        
+        try {
+            if (isSupabaseConfigured) {
+                await deleteSetoranLog(logId);
+            }
+            
+            const currentLocalLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            const updatedLocalLogs = currentLocalLogs.filter((log: any) => log.id !== logId);
+            localStorage.setItem('tqa_setoran_logs', JSON.stringify(updatedLocalLogs));
+            
+            const updatedLogs = logs.filter((log: any) => log.id !== logId);
+            setLogs(updatedLogs);
+            
+            if (student && onUpdateStudent) {
+                const studentRemainingLogs = updatedLogs.filter((log: any) => log.studentId === student.id);
+                await syncStudentProgressFromLogs(student.id, studentRemainingLogs);
+            }
+            
+            alert('Catatan setoran berhasil dihapus.');
+        } catch (e: any) {
+            console.error('Failed to delete setoran log:', e);
+            alert(`Gagal menghapus catatan setoran: ${e?.message || e}`);
+        }
+    };
+
+    const handleEditSave = async (logId: string | number, updatedFields: any) => {
+        try {
+            const existingLog = logs.find((l: any) => l.id === logId);
+            if (!existingLog) return;
+            
+            const nextLog = { ...existingLog, ...updatedFields };
+            
+            if (isSupabaseConfigured) {
+                await updateSetoranLog(nextLog);
+            }
+            
+            const currentLocalLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            const updatedLocalLogs = currentLocalLogs.map((log: any) => log.id === logId ? nextLog : log);
+            localStorage.setItem('tqa_setoran_logs', JSON.stringify(updatedLocalLogs));
+            
+            const updatedLogs = logs.map((log: any) => log.id === logId ? nextLog : log);
+            setLogs(updatedLogs);
+            
+            if (student && onUpdateStudent) {
+                const studentRemainingLogs = updatedLogs.filter((log: any) => log.studentId === student.id);
+                await syncStudentProgressFromLogs(student.id, studentRemainingLogs);
+            }
+            
+            alert('Catatan setoran berhasil diperbarui.');
+        } catch (e: any) {
+            console.error('Failed to update setoran log:', e);
+            alert(`Gagal memperbarui catatan setoran: ${e?.message || e}`);
+        }
+    };
+
 
     useEffect(() => {
         let isMounted = true;
@@ -255,6 +374,8 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
             );
         }
 
+        const isTeacher = user.role === 'teacher';
+
         return (
             <table className="w-full text-sm text-left border-collapse">
                 <thead>
@@ -265,6 +386,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                         <th className="px-6 py-4 text-center">Nilai</th>
                         <th className="px-6 py-4 text-center">Status</th>
                         <th className="px-6 py-4">Catatan Guru</th>
+                        {isTeacher && <th className="px-6 py-4 text-right">Aksi</th>}
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1A2E24] font-medium text-slate-700 dark:text-[#E2EAE5]">
@@ -312,6 +434,29 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                                 <td className="px-6 py-4 text-slate-500 dark:text-[#8BA398] text-xs font-semibold max-w-[200px] truncate" title={log.notes}>
                                     {log.notes || '-'}
                                 </td>
+                                {isTeacher && (
+                                    <td className="px-6 py-4 text-right whitespace-nowrap space-x-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedLogForEdit(log);
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-350 p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors cursor-pointer inline-flex items-center justify-center"
+                                            title="Edit"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteLog(log.id)}
+                                            className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-350 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer inline-flex items-center justify-center"
+                                            title="Hapus"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         );
                     })}
@@ -503,6 +648,16 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                     {renderTableContent()}
                 </div>
             </div>
+
+            <EditSetoranModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedLogForEdit(null);
+                }}
+                log={selectedLogForEdit}
+                onSave={handleEditSave}
+            />
         </div>
     );
 };

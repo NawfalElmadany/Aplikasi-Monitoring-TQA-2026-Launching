@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Student, User as UserType } from '../types';
 import Header from './Header';
 import { Search, ChevronRight, ChevronLeft, Save, AlignLeft, BookOpen, User, Calendar, CheckCircle } from 'lucide-react';
+import { getAssignedTeacher } from '../services/appData';
 
 interface SetoranPageProps {
     students: Student[];
@@ -55,7 +56,18 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
     onDismissNotification,
     onSearchClick
 }) => {
-    const [selectedClass, setSelectedClass] = useState<string>(preSelectedStudent?.class || '5C');
+    const defaultTeacher = useMemo(() => {
+        if (user && user.role === 'teacher') {
+            const nameLower = user.name.toLowerCase();
+            if (nameLower.includes('nawfal')) return 'Ustadz Nawfal';
+            if (nameLower.includes('ining')) return 'Ustadzah Ining';
+            if (nameLower.includes('rahma')) return 'Ustadzah Rahma';
+        }
+        return 'Semua';
+    }, [user]);
+
+    const [selectedClass, setSelectedClass] = useState<string>(preSelectedStudent?.class || 'Semua');
+    const [selectedTeacher, setSelectedTeacher] = useState<string>(defaultTeacher);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(preSelectedStudent || null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,19 +182,33 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
         }
     }, [showToast]);
 
-    const classes = ['5B', '5C', '5D', '6C', '6D'];
+    const classes = ['Semua', '5B', '5C', '5D', '6C', '6D'];
     const iqraLevels = [1, 2, 3, 4, 5, 6];
     const availableSurahs = JUZ_DATA[formData.currentJuz] || [];
 
     // Filter Students
     const filteredStudents = useMemo(() => {
-        let filtered = students.filter(s => s.class === selectedClass);
+        let filtered = students;
+        if (selectedClass !== 'Semua') {
+            filtered = filtered.filter(s => s.class === selectedClass);
+        }
+        if (selectedTeacher !== 'Semua') {
+            filtered = filtered.filter(s => {
+                const classStudents = students
+                    .filter(cs => cs.class === s.class)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                const idx = classStudents.findIndex(cs => cs.id === s.id);
+                if (idx === -1) return false;
+                const teacherInfo = getAssignedTeacher(s.name, s.class, idx);
+                return teacherInfo.name === selectedTeacher;
+            });
+        }
         if (searchQuery) {
             const lowerQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(s => s.name.toLowerCase().includes(lowerQuery));
         }
         return filtered;
-    }, [students, selectedClass, searchQuery]);
+    }, [students, selectedClass, selectedTeacher, searchQuery]);
 
     // Initialize Form on Student Select
     useEffect(() => {
@@ -386,10 +412,26 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                     onClick={() => setSelectedClass(cls)}
                                     className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap
                                         ${selectedClass === cls
-                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-250'
                                             : 'text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:bg-dark-card-hover'}`}
                                 >
-                                    Kelas {cls}
+                                    {cls === 'Semua' ? 'Semua Kelas' : `Kelas ${cls}`}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Pengampu Filters */}
+                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border flex gap-1 overflow-x-auto">
+                            {['Semua', 'Ustadz Nawfal', 'Ustadzah Ining', 'Ustadzah Rahma'].map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setSelectedTeacher(t)}
+                                    className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap
+                                        ${selectedTeacher === t
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-250'
+                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:bg-dark-card-hover'}`}
+                                >
+                                    {t === 'Semua' ? 'Semua Guru' : t.replace('Ustadz ', 'Ust. ').replace('Ustadzah ', 'Ustd. ')}
                                 </button>
                             ))}
                         </div>
