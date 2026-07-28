@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RotateCw, CheckCircle2, ChevronRight, Plus, Users, Save, X, BookOpen, StickyNote, Calendar, Pencil } from 'lucide-react';
+import { RotateCw, CheckCircle2, ChevronRight, Plus, Users, Save, X, BookOpen, StickyNote, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { MurojaahEntry, Student, User } from '../types';
 import { SURAHS_JUZ_29, SURAHS_JUZ_30 } from '../constants';
 import Header from './Header';
@@ -10,6 +10,7 @@ interface MurojaahPageProps {
     user: User | null;
     schedule: MurojaahEntry[];
     onSaveEntry: (entry: Omit<MurojaahEntry, 'id'>) => Promise<void>;
+    onDeleteEntry: (id: string | number) => Promise<void>;
     onMenuClick: () => void;
     notifications?: Student[];
     onDismissNotification?: (studentId: string) => void;
@@ -57,6 +58,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
     students, 
     schedule, 
     onSaveEntry,
+    onDeleteEntry,
     onMenuClick,
     notifications = [],
     onDismissNotification,
@@ -80,6 +82,11 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
     ];
 
     const [jurnalData, setJurnalData] = useState<{ id?: string | number; date: string; class: string; material: string }[]>(staticBase);
+
+    const [deletedJurnalIds, setDeletedJurnalIds] = useState<string[]>(() => {
+        const saved = localStorage.getItem('tqa_deleted_mock_murojaah_ids');
+        return saved ? JSON.parse(saved) : [];
+    });
 
     useEffect(() => {
         const dbJurnal = schedule
@@ -117,7 +124,9 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
             isoDate: parseIndonesianDateToYYYYMMDD(s.date)
         }));
 
-        const allEntries = [...dbJurnal, ...staticBaseWithIso];
+        const allEntries = [...dbJurnal, ...staticBaseWithIso].filter(entry => {
+            return !deletedJurnalIds.includes(String(entry.id));
+        });
 
         // Filter unique entries: only keep the last (most recent) entry per class
         const latestByClass = allEntries.reduce((acc, entry) => {
@@ -132,7 +141,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
         const sortedUnique = Object.values(latestByClass).sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
         setJurnalData(sortedUnique);
-    }, [schedule]);
+    }, [schedule, deletedJurnalIds]);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedJurnal, setSelectedJurnal] = useState<{ index: number; class: string; material: string } | null>(null);
@@ -162,6 +171,41 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
         setJurnalData(updatedData);
         setIsEditModalOpen(false);
         setSelectedJurnal(null);
+    };
+
+    const handleDeleteJurnal = async (id: string | number | undefined, date: string, className: string, material: string) => {
+        if (!window.confirm('Apakah Anda yakin ingin menghapus jurnal murojaah ini?')) {
+            return;
+        }
+
+        if (id) {
+            const idStr = String(id);
+            if (idStr.startsWith('mock-')) {
+                const nextDeleted = [...deletedJurnalIds, idStr];
+                setDeletedJurnalIds(nextDeleted);
+                localStorage.setItem('tqa_deleted_mock_murojaah_ids', JSON.stringify(nextDeleted));
+            } else {
+                try {
+                    await onDeleteEntry(id);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        } else {
+            // Fallback match for static mock entries
+            const match = staticBase.find(j => j.date === date && j.class === className && j.material === material);
+            if (match) {
+                const nextDeleted = [...deletedJurnalIds, match.id];
+                setDeletedJurnalIds(nextDeleted);
+                localStorage.setItem('tqa_deleted_mock_murojaah_ids', JSON.stringify(nextDeleted));
+            }
+        }
+
+        // Immediately filter from local state for instant feedback
+        setJurnalData(prev => prev.filter(j => {
+            if (id && j.id && j.id === id) return false;
+            return !(j.date === date && j.class === className && j.material === material);
+        }));
     };
 
     useEffect(() => {
@@ -512,7 +556,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                             <th className="pb-3 pl-1 w-1/4">TANGGAL</th>
                                             <th className="pb-3 text-left w-1/2">MATERI MUROJAAH</th>
                                             <th className="pb-3 text-center w-1/4">STATUS/CATATAN</th>
-                                            {user?.role === 'teacher' && <th className="pb-3 text-center w-16">AKSI</th>}
+                                            {user?.role === 'teacher' && <th className="pb-3 text-center w-24">AKSI</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-[#1A2E24] text-sm">
@@ -527,16 +571,26 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                                     </span>
                                                 </td>
                                                 {user?.role === 'teacher' && (
-                                                    <td className="py-4 text-center w-16">
-                                                        <div className="flex justify-center">
+                                                    <td className="py-4 text-center w-24">
+                                                        <div className="flex justify-center gap-3">
                                                             <button 
                                                                 onClick={() => {
                                                                     const origIdx = jurnalData.findIndex(j => j.class === row.class && j.date === row.date && j.material === row.material);
                                                                     handleEditClick(origIdx, row);
                                                                 }}
                                                                 className="text-slate-400 dark:text-[#8BA398] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                                                                title="Edit Jurnal"
                                                             >
                                                                 <Pencil size={16} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    handleDeleteJurnal(row.id, row.date, row.class, row.material);
+                                                                }}
+                                                                className="text-slate-400 dark:text-[#8BA398] hover:text-rose-600 transition-colors cursor-pointer"
+                                                                title="Hapus Jurnal"
+                                                            >
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </div>
                                                     </td>

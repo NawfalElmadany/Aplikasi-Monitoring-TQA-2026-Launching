@@ -1,9 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle } from 'lucide-react';
+import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle } from 'lucide-react';
 import { User, AcademicYear, Target, Teacher } from '../types';
 import TeacherModal from './TeacherModal';
 import Header from './Header';
 import { Student } from '../types';
+import Cropper from 'react-easy-crop';
+import { supabase } from '../lib/supabase';
+
+const getCroppedImg = (
+    imageSrc: string,
+    pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.src = imageSrc;
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('No 2d context'));
+                return;
+            }
+            canvas.width = pixelCrop.width;
+            canvas.height = pixelCrop.height;
+            ctx.drawImage(
+                image,
+                pixelCrop.x,
+                pixelCrop.y,
+                pixelCrop.width,
+                pixelCrop.height,
+                0,
+                0,
+                pixelCrop.width,
+                pixelCrop.height
+            );
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    reject(new Error('Canvas is empty'));
+                    return;
+                }
+                resolve(blob);
+            }, 'image/jpeg');
+        };
+        image.onerror = (err) => reject(err);
+    });
+};
+
 
 interface SettingsPageProps {
     user: User | null;
@@ -42,17 +84,29 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
     // Teacher Modal State
     const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
     const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+
+    // Profile photo upload/cropper states
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+    const [isCroppingOpen, setIsCroppingOpen] = useState(false);
+    const [originalFileName, setOriginalFileName] = useState('');
 
     // Mock Data & State
     const [profile, setProfile] = useState({
         name: 'Ustadz Abdullah, S.Pd.I',
         password: 'password123',
         role: 'Head Teacher',
-        email: 'abdullah@tqa-madiun.sch.id'
+        email: 'abdullah@tqa-madiun.sch.id',
+        avatar: ''
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -64,10 +118,127 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
             setProfile(prev => ({
                 ...prev,
                 name: user.name,
-                role: user.role === 'teacher' ? 'Head Teacher' : 'Student'
+                role: user.role === 'teacher' ? 'Head Teacher' : 'Student',
+                avatar: user.avatar || ''
             }));
         }
     }, [user]);
+
+    const handleUploadClick = () => {
+        if (avatarFileInputRef.current) {
+            avatarFileInputRef.current.click();
+        }
+    };
+
+    const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validation
+        if (!file.type.startsWith('image/')) {
+            setUploadError('Tolong pilih file gambar saja (JPG, PNG, WebP).');
+            return;
+        }
+
+        // Limit 2MB
+        if (file.size > 2 * 1024 * 1024) {
+            setUploadError('Ukuran gambar maksimal adalah 2MB.');
+            return;
+        }
+
+        setOriginalFileName(file.name);
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            setImageSrc(reader.result as string);
+            setIsCroppingOpen(true);
+        });
+        reader.readAsDataURL(file);
+    };
+
+    const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleCropAndUpload = async () => {
+        if (!imageSrc || !croppedAreaPixels) return;
+
+        setIsUploading(true);
+        setUploadError(null);
+        setIsCroppingOpen(false);
+
+        try {
+            const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+            // Convert Blob to File
+            const croppedFile = new File([croppedBlob], originalFileName, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+
+            let finalUrl = '';
+
+            if (supabase) {
+                // Try uploading to Supabase Storage bucket: avatars
+                const fileExt = originalFileName.split('.').pop() || 'jpg';
+                const fileName = `teacher-${Date.now()}.${fileExt}`;
+                const filePath = `avatars/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, croppedFile, { cacheControl: '3600', upsert: true });
+
+                if (!uploadError) {
+                    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+                    finalUrl = data?.publicUrl || '';
+                } else {
+                    console.warn('Supabase storage upload error, falling back to local base64:', uploadError);
+                }
+            }
+
+            // Fallback to local Base64 string if Supabase is offline or fails
+            if (!finalUrl) {
+                finalUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = (err) => reject(err);
+                    reader.readAsDataURL(croppedFile);
+                });
+            }
+
+            // Save updates
+            onSaveProfile({ avatar: finalUrl });
+            setProfile(prev => ({ ...prev, avatar: finalUrl }));
+
+            // Reset success message after 3 seconds
+            setSaveStatus('success');
+            setTimeout(() => {
+                setSaveStatus('idle');
+            }, 3000);
+
+        } catch (error: any) {
+            console.error('Failed to crop/upload image:', error);
+            setUploadError(error.message || 'Gagal mengunggah foto profil.');
+        } finally {
+            setIsUploading(false);
+            setImageSrc(null);
+            setCroppedAreaPixels(null);
+            setZoom(1);
+            setCrop({ x: 0, y: 0 });
+            if (avatarFileInputRef.current) {
+                avatarFileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleCropCancel = () => {
+        setIsCroppingOpen(false);
+        setImageSrc(null);
+        setCroppedAreaPixels(null);
+        setZoom(1);
+        setCrop({ x: 0, y: 0 });
+        if (avatarFileInputRef.current) {
+            avatarFileInputRef.current.value = '';
+        }
+    };
 
     const handleSaveProfile = () => {
         setIsLoading(true);
@@ -75,7 +246,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
         // Simulate API call
         setTimeout(() => {
-            onSaveProfile({ name: profile.name });
+            onSaveProfile({ name: profile.name, avatar: profile.avatar });
             setIsLoading(false);
             setSaveStatus('success');
 
@@ -180,51 +351,102 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     {activeTab === 'profile' && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
                             <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">Edit Profil Pengguna</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Nama Lengkap</label>
-                                    <input
-                                        type="text"
-                                        value={profile.name}
-                                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none"
-                                    />
+
+                            {/* Alerts */}
+                            {uploadError && (
+                                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 p-4 rounded-2xl flex items-start gap-3 shadow-sm text-red-800 dark:text-red-300 text-sm">
+                                    <AlertCircle className="shrink-0 mt-0.5" size={18} />
+                                    <span>{uploadError}</span>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Password</label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? "text" : "password"}
-                                            value={profile.password}
-                                            onChange={(e) => setProfile({ ...profile, password: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none pr-10"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            )}
+
+                            <div className="flex flex-col md:flex-row gap-8 items-start">
+                                {/* Left Side: Avatar Upload */}
+                                <div className="flex flex-col items-center gap-3 shrink-0 mx-auto md:mx-0">
+                                    <div className="relative group">
+                                        <div
+                                            onClick={handleUploadClick}
+                                            className="w-32 h-32 rounded-full overflow-hidden border-4 border-emerald-50 dark:border-[#1A2E24] shadow-md relative bg-slate-100 dark:bg-[#09120E] flex items-center justify-center cursor-pointer"
                                         >
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            {profile.avatar ? (
+                                                <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UserIcon size={56} className="text-slate-400" />
+                                            )}
+
+                                            {isUploading && (
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white">
+                                                    <Loader2 className="animate-spin" size={24} />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={handleUploadClick}
+                                            disabled={isUploading}
+                                            className="absolute -bottom-1 -right-1 bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-full shadow-lg border-2 border-white dark:border-[#121F18] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Ubah Foto Profil"
+                                        >
+                                            <Upload size={14} />
                                         </button>
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Role</label>
+                                    <span className="text-xs font-semibold text-gray-500">Klik untuk mengubah foto</span>
                                     <input
-                                        type="text"
-                                        value={profile.role}
-                                        disabled
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        type="file"
+                                        ref={avatarFileInputRef}
+                                        onChange={handleAvatarFileChange}
+                                        accept="image/*"
+                                        className="hidden"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Email</label>
-                                    <input
-                                        type="email"
-                                        value={profile.email}
-                                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none"
-                                    />
+
+                                {/* Right Side: Profile Details */}
+                                <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700">Nama Lengkap</label>
+                                        <input
+                                            type="text"
+                                            value={profile.name}
+                                            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700">Password</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={profile.password}
+                                                onChange={(e) => setProfile({ ...profile, password: e.target.value })}
+                                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700">Role</label>
+                                        <input
+                                            type="text"
+                                            value={profile.role}
+                                            disabled
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700">Email</label>
+                                        <input
+                                            type="email"
+                                            value={profile.email}
+                                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-200 outline-none"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex justify-end pt-4">
@@ -405,6 +627,67 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                         onSave={handleSaveTeacher}
                         teacher={selectedTeacher}
                     />
+
+                    {/* Image Cropper Modal */}
+                    {isCroppingOpen && imageSrc && (
+                        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 font-sans">
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-6 animate-in zoom-in-95 duration-200">
+                                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                                    <h3 className="text-lg font-bold text-white">
+                                        Sesuaikan Foto Profil
+                                    </h3>
+                                </div>
+
+                                {/* Cropper Container */}
+                                <div className="relative w-full h-72 bg-slate-950 rounded-2xl overflow-hidden border border-white/5">
+                                    <Cropper
+                                        image={imageSrc}
+                                        crop={crop}
+                                        zoom={zoom}
+                                        aspect={1}
+                                        cropShape="round"
+                                        showGrid={false}
+                                        onCropChange={setCrop}
+                                        onCropComplete={onCropComplete}
+                                        onZoomChange={setZoom}
+                                    />
+                                </div>
+
+                                {/* Slider control */}
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Perbesar / Perkecil</label>
+                                        <span className="text-xs text-slate-500 font-semibold">{Math.round(zoom * 100)}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={1}
+                                        max={3}
+                                        step={0.05}
+                                        value={zoom}
+                                        onChange={(e) => setZoom(parseFloat(e.target.value))}
+                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                    />
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button
+                                        onClick={handleCropCancel}
+                                        className="px-4 py-2 bg-transparent hover:bg-white/5 text-slate-400 hover:text-white rounded-xl text-sm font-semibold transition-colors cursor-pointer border border-white/10"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleCropAndUpload}
+                                        className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                                    >
+                                        Terapkan Profil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* Data & Security Section */}
                     {activeTab === 'data' && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">

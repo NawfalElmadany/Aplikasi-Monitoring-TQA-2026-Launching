@@ -38,7 +38,7 @@ import GharibPage from './components/GharibPage';
 import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead } from './services/appData';
 
 function App() {
    const cleanStudents: Student[] = INITIAL_STUDENTS.map(s => ({
@@ -456,6 +456,23 @@ function App() {
             await deleteGharibEntry(id);
          } catch (error: any) {
             console.error('Failed to delete Gharib entry from Supabase:', error);
+            alert(`Gagal menghapus dari Supabase: ${error?.message || error}`);
+         }
+      }
+   };
+
+   const handleDeleteMurojaahEntry = async (id: string | number) => {
+      setMurojaahEntries(prev => {
+         const next = prev.filter(e => e.id !== id);
+         localStorage.setItem('tqa_murojaah_entries', JSON.stringify(next));
+         return next;
+      });
+
+      if (isSupabaseConfigured) {
+         try {
+            await deleteMurojaahEntry(id);
+         } catch (error: any) {
+            console.error('Failed to delete Murojaah entry from Supabase:', error);
             alert(`Gagal menghapus dari Supabase: ${error?.message || error}`);
          }
       }
@@ -1092,6 +1109,7 @@ function App() {
                      const saved = await createMurojaahEntry(entry);
                      setMurojaahEntries(prev => [saved, ...prev]);
                   }}
+                  onDeleteEntry={handleDeleteMurojaahEntry}
                   onMenuClick={() => setIsSidebarOpen(true)}
                   notifications={notifications}
                   onDismissNotification={handleDismissNotification}

@@ -254,6 +254,19 @@ export const createMurojaahEntry = async (entry: Omit<MurojaahEntry, 'id'>): Pro
   return mapMurojaahFromRow(data);
 };
 
+export const deleteMurojaahEntry = async (id: string | number): Promise<void> => {
+  const client = ensureSupabase();
+  const { error } = await client
+    .from('murojaah_entries')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    throw error;
+  }
+};
+
+
 const mapGharibFromRow = (row: any): GharibEntry => ({
   id: row.id,
   className: row.kelas,
