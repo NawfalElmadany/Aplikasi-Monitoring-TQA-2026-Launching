@@ -103,6 +103,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
   const [role, setRole] = useState<'teacher' | 'student'>('teacher');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   // Student Login State
   const [selectedClass, setSelectedClass] = useState('');
@@ -117,14 +118,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     // Simulate API delay
     setTimeout(() => {
       let mockUser: UserType;
 
       if (role === 'teacher') {
+        if (username !== 'TQA56' || password !== 'TQAJAYA') {
+          setError('Username atau Password salah!');
+          setIsLoading(false);
+          return;
+        }
+
         mockUser = {
-          name: username || 'Ustadz/zah TQA Kelas 5&6',
+          name: 'Ustadz/zah TQA Kelas 5&6',
           role: 'teacher',
           avatar: 'https://picsum.photos/seed/ustadz/100/100'
         };
@@ -146,7 +154,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
   };
 
   const isFormValid = () => {
-    if (role === 'teacher') return true; // Allow empty for demo
+    if (role === 'teacher') return username.trim() !== '' && password.trim() !== '';
     return selectedClass !== '' && selectedStudentId !== '';
   };
 
@@ -203,7 +211,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
           {/* Role Tabs */}
           <div className="flex gap-1 bg-gray-100 dark:bg-[#0B140F] p-1 rounded-xl mb-6 lg:mb-8 border border-gray-250 dark:border-white/5">
             <button
-              onClick={() => setRole('teacher')}
+              onClick={() => {
+                setRole('teacher');
+                setError('');
+              }}
               className={`w-1/2 py-2 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out ${
                 role === 'teacher'
                   ? 'bg-white dark:bg-[#111D16] border border-gray-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-sm'
@@ -214,7 +225,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
               Guru / Ustadz
             </button>
             <button
-              onClick={() => setRole('student')}
+              onClick={() => {
+                setRole('student');
+                setError('');
+              }}
               className={`w-1/2 py-2 flex items-center justify-center gap-2 text-sm font-semibold rounded-lg focus:outline-none focus:ring-0 transition-all duration-300 ease-in-out ${
                 role === 'student'
                   ? 'bg-white dark:bg-[#111D16] border border-gray-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 shadow-sm'
@@ -236,7 +250,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
                     <input
                       type="text"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (error) setError('');
+                      }}
                       placeholder="Masukkan username"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B140F] focus:border-emerald-500 focus:dark:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all dark:text-white"
                     />
@@ -249,7 +266,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
                     <input
                       type="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError('');
+                      }}
                       placeholder="********"
                       className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0B140F] focus:border-emerald-500 focus:dark:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all dark:text-white"
                     />
@@ -284,6 +304,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
                   />
                 </div>
               </>
+            )}
+
+            {error && (
+              <div className="p-3 bg-rose-50/80 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-rose-600 dark:text-rose-450 text-sm rounded-xl font-semibold flex items-center gap-2 animate-in fade-in duration-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                {error}
+              </div>
             )}
 
             <button
