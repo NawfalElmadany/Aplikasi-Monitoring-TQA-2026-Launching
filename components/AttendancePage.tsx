@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Search, Filter, CalendarCheck, Check, X, Clock, FileText, Save, CheckCircle2, AlertCircle, Calendar, Loader2 } from 'lucide-react';
 import { Student, User, AttendanceRecord } from '../types';
 import Header from './Header';
+import FloatingHeaderCard from './FloatingHeaderCard';
 import { loadAttendanceLogs, saveAttendanceLogs, loadStudentAttendanceLogs } from '../services/appData';
 
 
@@ -252,7 +253,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
 
     if (isStudent) {
         return (
-            <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+            <div className="space-y-6 flex-1 flex flex-col min-h-0">
                 {/* Header */}
                 <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none">
                     <Header
@@ -405,9 +406,9 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
     }
 
     return (
-        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
-            {/* Sticky Container Wrapper */}
-            <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none">
+        <div className="space-y-6 flex-1 flex flex-col min-h-0">
+            {/* Header Card */}
+            <FloatingHeaderCard className="no-print">
                 <Header
                     user={user}
                     onMenuClick={onMenuClick}
@@ -419,118 +420,122 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                     subtitle="Catat kehadiran siswa hari ini"
                     unreadNotesCount={unreadNotesCount}
                 />
-            </div>
+            </FloatingHeaderCard>
 
             {isTableMissing && (
-                <div className="bg-amber-50 dark:bg-[#2A2115] border border-amber-200 dark:border-[#4B3C27] p-4 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 mb-4 flex-none">
+                <div className="bg-amber-50 dark:bg-[#2A2115] border border-amber-200 dark:border-[#4B3C27] p-4 rounded-2xl flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 mb-2 flex-none">
                     <AlertCircle className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" size={18} />
                     <div className="text-xs md:text-sm text-amber-800 dark:text-[#E9D5C3] font-semibold leading-relaxed">
-                        <span className="font-extrabold text-amber-900 dark:text-amber-300">Mode Penyimpanan Lokal Aktif:</span> Tabel <code className="bg-amber-100 dark:bg-[#3D2E1C] px-1.5 py-0.5 rounded text-amber-950 dark:text-amber-200 font-mono text-[11px]">attendance</code> belum dibuat di database Supabase Anda. Seluruh data absensi disimpan secara lokal di browser ini. Silakan jalankan script SQL migrasi di editor SQL Supabase Anda untuk mengaktifkan sinkronisasi awan.
+                        <span className="font-extrabold text-amber-900 dark:text-amber-300">Mode Penyimpanan Lokal Aktif:</span> Tabel <code className="bg-amber-100 dark:bg-[#3D2E1C] px-1.5 py-0.5 rounded text-amber-950 dark:text-amber-200 font-mono text-[11px]">attendance</code> belum dibuat di database Supabase Anda. Seluruh data absensi disimpan secara lokal di browser ini.
                     </div>
                 </div>
             )}
 
-                {/* Controls */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-dark-border flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                        {/* Class Selector */}
-                        <div className="relative">
-                            <select
-                                value={selectedClass}
-                                onChange={(e) => setSelectedClass(e.target.value)}
-                                className="appearance-none bg-gray-50 dark:bg-dark-card-hover border border-slate-200 dark:border-dark-border text-slate-700 dark:text-gray-200 py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-bold cursor-pointer"
-                            >
-                                <option value="5B">Kelas 5B</option>
-                                <option value="5C">Kelas 5C</option>
-                                <option value="5D">Kelas 5D</option>
-                                <option value="6C">Kelas 6C</option>
-                                <option value="6D">Kelas 6D</option>
-                            </select>
-                            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                        </div>
+            {/* Controls Bar */}
+            <div className="bg-white dark:bg-[#12231A] p-4 rounded-2xl shadow-sm border border-emerald-100/60 dark:border-[#1E382B] flex flex-col md:flex-row gap-4 items-center justify-between transition-colors">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    {/* Class Selector */}
+                    <div className="relative">
+                        <select
+                            value={selectedClass}
+                            onChange={(e) => setSelectedClass(e.target.value)}
+                            className="w-full sm:w-auto appearance-none bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold cursor-pointer transition-colors"
+                        >
+                            <option value="5B">Kelas 5B</option>
+                            <option value="5C">Kelas 5C</option>
+                            <option value="5D">Kelas 5D</option>
+                            <option value="6C">Kelas 6C</option>
+                            <option value="6D">Kelas 6D</option>
+                        </select>
+                        <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] pointer-events-none" size={16} />
+                    </div>
 
-                        {/* Date Picker */}
+                    {/* Date Picker */}
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full sm:w-auto bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold transition-colors cursor-pointer"
+                    />
+                </div>
+
+                <div className="flex gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578]" size={18} />
                         <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="bg-gray-50 border border-slate-200 dark:border-dark-border text-slate-700 dark:text-gray-200 py-2 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
+                            type="text"
+                            placeholder="Cari nama siswa..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-slate-800 dark:text-[#E2EAE5] placeholder-slate-400 dark:placeholder-[#6B8578] transition-colors"
                         />
                     </div>
-
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Cari nama siswa..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-dark-card-hover border border-slate-200 dark:border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium text-slate-700"
-                            />
-                        </div>
-                    </div>
                 </div>
+            </div>
 
-                {/* Sub-header (Daftar Siswa + Tandai Semua Hadir) */}
-                <div className="bg-white rounded-t-2xl border border-slate-100 dark:border-dark-border p-4 flex justify-between items-center bg-gray-50 dark:bg-dark-card-hover/50">
-                    <h3 className="font-bold text-slate-800">Daftar Siswa ({filteredStudents.length})</h3>
-                    <button
-                        onClick={markAllPresent}
-                        className="text-sm font-bold text-emerald-600 hover:text-emerald-800 transition-colors"
-                    >
-                        Tandai Semua Hadir
-                    </button>
-                </div>
+            {/* List Header Bar */}
+            <div className="bg-white dark:bg-[#12231A] rounded-t-2xl border border-emerald-100/60 dark:border-[#1E382B] border-b-0 p-4 flex justify-between items-center transition-colors">
+                <h3 className="font-bold text-slate-800 dark:text-[#E2EAE5] text-base">
+                    Daftar Siswa <span className="text-emerald-700 dark:text-emerald-400 font-bold ml-1">({filteredStudents.length})</span>
+                </h3>
+                <button
+                    onClick={markAllPresent}
+                    className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 transition-all cursor-pointer"
+                >
+                    Tandai Semua Hadir
+                </button>
+            </div>
 
-            {/* Attendance List Container (Independent Scroll on desktop) */}
-            <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-2">
-                <div className="bg-white rounded-b-2xl border border-slate-100 dark:border-dark-border divide-y divide-gray-100 overflow-hidden">
+            {/* Attendance List Area */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide pb-28 pt-0">
+                <div className="bg-white dark:bg-[#12231A] rounded-b-2xl border border-emerald-100/60 dark:border-[#1E382B] divide-y divide-slate-100 dark:divide-[#192E23] overflow-hidden shadow-sm transition-colors">
                     {filteredStudents.length > 0 ? (
                         filteredStudents.map((student, index) => (
-                            <div key={student.id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-slate-50 dark:bg-dark-card-hover transition-colors group">
-                                <div className="flex items-center gap-4 w-full sm:w-auto">
-                                    <div className="font-bold text-slate-400 text-sm w-6">{index + 1}</div>
-                                    <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-dark-card-hover object-cover" />
+                            <div key={student.id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-emerald-50/40 dark:hover:bg-[#16291F] transition-colors group">
+                                <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                                    <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
+                                        {index + 1}
+                                    </div>
+                                    <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#0C1A13] object-cover border border-slate-200 dark:border-[#1E382B]" />
                                     <div>
-                                        <p className="font-bold text-slate-800">{student.name}</p>
-                                        <p className="text-xs text-slate-500">Kelas {student.class}</p>
+                                        <p className="font-bold text-slate-800 dark:text-white text-sm sm:text-base leading-tight">{student.name}</p>
+                                        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md inline-block mt-1 border border-emerald-200/50 dark:border-emerald-800/30">Kelas {student.class}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 bg-slate-100 dark:bg-dark-card-hover/50 p-1.5 rounded-xl">
+                                <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 dark:bg-[#0C1A13] p-1.5 rounded-xl border border-slate-200/60 dark:border-[#1A2E24] w-full sm:w-auto justify-center">
                                     <button
                                         onClick={() => handleAttendanceChange(student.id, 'present')}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'present'
-                                            ? 'bg-emerald-500 text-white shadow-sm scale-105'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-200'
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'present'
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-105 font-extrabold'
+                                            : 'text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-200 dark:hover:bg-[#16291F]'
                                             }`}
                                     >
                                         <Check size={14} /> Hadir
                                     </button>
                                     <button
                                         onClick={() => handleAttendanceChange(student.id, 'permission')}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'permission'
-                                            ? 'bg-teal-500 text-white shadow-sm scale-105'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-200'
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'permission'
+                                            ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 scale-105 font-extrabold'
+                                            : 'text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-200 dark:hover:bg-[#16291F]'
                                             }`}
                                     >
                                         <FileText size={14} /> Izin
                                     </button>
                                     <button
                                         onClick={() => handleAttendanceChange(student.id, 'sick')}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'sick'
-                                            ? 'bg-amber-500 text-white shadow-sm scale-105'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-200'
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'sick'
+                                            ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30 scale-105 font-extrabold'
+                                            : 'text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-200 dark:hover:bg-[#16291F]'
                                             }`}
                                     >
                                         <Clock size={14} /> Sakit
                                     </button>
                                     <button
                                         onClick={() => handleAttendanceChange(student.id, 'alpha')}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'alpha'
-                                            ? 'bg-red-500 text-white shadow-sm scale-105'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-200'
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${attendance[student.id] === 'alpha'
+                                            ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-105 font-extrabold'
+                                            : 'text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-200 dark:hover:bg-[#16291F]'
                                             }`}
                                     >
                                         <X size={14} /> Alpha
@@ -539,26 +544,26 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                             </div>
                         ))
                     ) : (
-                        <div className="p-8 text-center text-slate-400">
-                            <Users size={32} className="mx-auto mb-2 opacity-20" />
-                            <p>Tidak ada siswa ditemukan.</p>
+                        <div className="p-12 text-center text-slate-400 dark:text-[#6B8578]">
+                            <Users size={36} className="mx-auto mb-3 opacity-30" />
+                            <p className="font-medium text-sm">Tidak ada siswa ditemukan.</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Bottom Actions Bar (flex-none) */}
-            <div className="flex justify-end pt-4 pb-4 flex-none">
+            {/* Floating Save Action Button */}
+            <div className="fixed bottom-6 right-6 sm:right-10 z-40">
                 <button
                     onClick={handleSaveAttendance}
                     disabled={isSaving}
-                    className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all duration-300 shadow-sm ${isSaving
-                        ? 'bg-emerald-600 text-white scale-105'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-bold text-sm text-white transition-all duration-300 shadow-xl shadow-emerald-900/30 border border-emerald-400/30 cursor-pointer ${isSaving
+                        ? 'bg-emerald-600 scale-105'
+                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 active:scale-95'
                         }`}
                 >
-                    {isSaving ? <CheckCircle2 size={20} className="animate-in zoom-in spin-in-90" /> : <Save size={20} />}
-                    {isSaving ? 'Tersimpan!' : 'Simpan Absensi'}
+                    {isSaving ? <CheckCircle2 size={20} className="animate-spin" /> : <Save size={20} />}
+                    <span>{isSaving ? 'Menyimpan...' : 'Simpan Absensi'}</span>
                 </button>
             </div>
         </div>

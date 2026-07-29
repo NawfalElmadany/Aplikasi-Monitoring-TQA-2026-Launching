@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, BookOpen } from 'lucide-react';
-import { Student } from '../types';
+import { Student, User } from '../types';
 import StudentList from './StudentList';
 
 interface ScoreDetailModalProps {
@@ -10,6 +10,7 @@ interface ScoreDetailModalProps {
     title?: string;
     subtitle?: string;
     children?: React.ReactNode;
+    user?: User;
 }
 
 const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({
@@ -18,7 +19,8 @@ const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({
     students = [], // Default value
     title = "Detail Nilai Siswa",
     subtitle = "Daftar lengkap capaian dan nilai siswa",
-    children
+    children,
+    user
 }) => {
     if (!isOpen) return null;
 
@@ -52,6 +54,7 @@ const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({
                             students={students}
                             onInputNilai={() => { }} // No-op since readOnly is true
                             readOnly={true}
+                            user={user}
                         />
                     )}
                 </div>

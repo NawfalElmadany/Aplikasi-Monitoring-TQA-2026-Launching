@@ -1,14 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import logoUrl from './assets/logo.png';
 import { BookOpen, FileText, Calendar, ChevronDown, AlertCircle, Activity, Plus, Download, CheckCircle2, LayoutDashboard, Users, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, Menu, LogOut, MessageSquare } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import StudentList from './components/StudentList';
 import StatCard from './components/StatCard';
 import StudentSelectModal from './components/StudentSelectModal';
-import SettingsPage from './components/SettingsPage';
 import ScheduleModal from './components/ScheduleModal';
 import StatsDashboard from './components/StatsDashboard';
 import HafalanTrackerCard from './components/HafalanTrackerCard';
@@ -16,29 +13,33 @@ import HafalanTargetWidget from './components/HafalanTargetWidget';
 
 import StudentHistoryModal from './components/StudentHistoryModal';
 import LoginPage from './components/LoginPage';
-import SetoranPage from './components/SetoranPage';
-
-import HafalanPage from './components/HafalanPage';
-import ProfilSiswaPage from './components/ProfilSiswaPage';
-
-import RiwayatPage from './components/RiwayatPage';
-import MonitoringPage from './components/MonitoringPage';
-import StudentProfilePage from './components/StudentProfilePage';
 import ScoreDetailModal from './components/ScoreDetailModal';
 import UnsubmittedListView from './components/UnsubmittedListView';
 import SpecialGuidanceListView from './components/SpecialGuidanceListView';
 import AverageDetailsView from './components/AverageDetailsView';
 import DashboardModern from './components/DashboardModern';
+import PageLoader from './components/PageLoader';
 
-import CatatanPage from './components/CatatanPage';
-import MurojaahPage from './components/MurojaahPage';
-import AttendancePage from './components/AttendancePage';
-import TartiliPage from './components/TartiliPage';
-import GharibPage from './components/GharibPage';
+// Lazy loaded page components for optimal bundle splitting
+const SettingsPage = lazy(() => import('./components/SettingsPage'));
+const SetoranPage = lazy(() => import('./components/SetoranPage'));
+const HafalanPage = lazy(() => import('./components/HafalanPage'));
+const ProfilSiswaPage = lazy(() => import('./components/ProfilSiswaPage'));
+const RiwayatPage = lazy(() => import('./components/RiwayatPage'));
+const MonitoringPage = lazy(() => import('./components/MonitoringPage'));
+const StudentProfilePage = lazy(() => import('./components/StudentProfilePage'));
+const CatatanPage = lazy(() => import('./components/CatatanPage'));
+const MurojaahPage = lazy(() => import('./components/MurojaahPage'));
+const AttendancePage = lazy(() => import('./components/AttendancePage'));
+const TartiliPage = lazy(() => import('./components/TartiliPage'));
+const GharibPage = lazy(() => import('./components/GharibPage'));
+
 import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead } from './services/appData';
+import { generateMonthlyReportPDF } from './services/pdfExport';
+import { useToast } from './context/ToastContext';
 
 function App() {
    const cleanStudents: Student[] = INITIAL_STUDENTS.map(s => ({
@@ -1342,154 +1343,16 @@ function App() {
             });
 
             const downloadPDF = () => {
-               const doc = new jsPDF('landscape');
-
-               // Header
-               // Header with Logo
-               const logoSize = 22;
-               doc.addImage(logoUrl, 'PNG', 14, 14, logoSize, logoSize);
-
-               const textX = 40; // 14 (margin) + 22 (logo) + 4 (padding)
-               doc.setFontSize(18);
-               doc.text("MI AL IRSYAD KOTA MADIUN", textX, 22);
-               doc.setFontSize(12);
-               doc.text("Program Tahfidz Al-Qur'an (TQA)", textX, 29);
-               doc.setFontSize(10);
-               doc.text("Jl. Diponegoro No. 112B Kota Madiun, Jawa Timur", textX, 35);
-
-               // Line separator
-               doc.setLineWidth(0.5);
-               doc.line(14, 38, 283, 38);
-
-               // Report Info
-               doc.setFontSize(14);
-               doc.text("Laporan Bulanan", 283, 20, { align: 'right' });
-               doc.setFontSize(10);
-               if (reportFilterMode === 'month') {
-                  doc.text(`Periode: ${getDisplayMonthLabel(reportMonth)}`, 283, 28, { align: 'right' });
-               } else {
-                  const formatDateId = (dateStr: string) => {
-                     const [y, m, d] = dateStr.split('-');
-                     return `${d}/${m}/${y}`;
-                  };
-                  doc.text(`Periode: ${formatDateId(reportStartDate)} s/d ${formatDateId(reportEndDate)}`, 283, 28, { align: 'right' });
-               }
-               doc.text(`Kelas: ${reportClass}`, 283, 34, { align: 'right' });
-
-               // Table
-               const tableColumn = ["No", "Nama Siswa", "Hafalan Awal", "Hafalan Akhir", "Drill Munaqosah", "Tartili Awal", "Tartili Akhir", "Drill Tartili", "Gharib"];
-               const tableRows = reportData.map((student: any, index) => [
-                  index + 1,
-                  student.name,
-                  student.hafalanStart,
-                  student.hafalanEnd,
-                  student.drillMunaqosah,
-                  student.tartiliStart,
-                  student.tartiliEnd,
-                  student.drillTartili,
-                  student.gharib
-               ]);
-
-                 autoTable(doc, {
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: 45,
-                    theme: 'grid',
-                    styles: { fontSize: 7, cellPadding: 1.5 },
-                    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                    columnStyles: {
-                       0: { halign: 'center', cellWidth: 8 },
-                       1: { cellWidth: 38 },
-                       2: { halign: 'center' },
-                       3: { halign: 'center', fontStyle: 'bold' },
-                       4: { halign: 'center', fontStyle: 'bold' },
-                       5: { halign: 'center' },
-                       6: { halign: 'center', fontStyle: 'bold' },
-                       7: { halign: 'center', fontStyle: 'bold' },
-                       8: { halign: 'center' }
-                    },
-                    didParseCell: (data: any) => {
-                       if (data.section === 'body' && data.column.index === 0) {
-                          // Save the number to a custom property
-                          data.cell.customText = data.cell.text;
-                          // Set default cell text to empty so autotable doesn't draw it automatically
-                          data.cell.text = '';
-                          // Set cell background to white/transparent
-                          data.cell.styles.fillColor = [255, 255, 255];
-                       }
-                    },
-                    didDrawCell: (data: any) => {
-                       if (data.section === 'body' && data.column.index === 0) {
-                          const studentIndex = data.row.index;
-                          const teacherIndex = studentIndex % 3;
-                          const doc = data.doc;
-                          
-                          // Determine color
-                          let color = [37, 99, 235]; // Blue
-                          if (teacherIndex === 1) {
-                             color = [22, 163, 74]; // Green
-                          } else if (teacherIndex === 2) {
-                             color = [217, 119, 6]; // Orange
-                          }
-                          
-                          // Calculate center of cell
-                          const x = data.cell.x + data.cell.width / 2;
-                          const y = data.cell.y + data.cell.height / 2;
-                          const radius = 2.4; // fits nicely inside a 10mm wide cell with padding
-                          
-                          // Draw circle
-                          doc.setFillColor(color[0], color[1], color[2]);
-                          doc.circle(x, y, radius, 'F');
-                          
-                          // Draw white centered text
-                          doc.setFont(data.cell.styles.font, 'bold');
-                          doc.setFontSize(7); // slightly smaller to fit circular badge perfectly
-                          doc.setTextColor(255, 255, 255);
-                          
-                          const text = String(data.cell.customText || '');
-                          // Center the text horizontally and vertically
-                          doc.text(text, x, y, { align: 'center', baseline: 'middle' });
-                       }
-                    }
-                 });
-
-               // Footer Signatures
-               // @ts-ignore
-               const finalY = (doc.lastAutoTable.finalY || 40) + 20;
-
-               // Check if there's space, otherwise add new page
-                     if (finalY > 180) {
-                  doc.addPage();
-                  // Reset Y for new page
-               }
-
-               const legendY = finalY > 180 ? 30 : finalY;
-
-               doc.setFontSize(10);
-               doc.setTextColor(0, 0, 0);
-
-                // Warna 1: Ustadz Nawfal
-                const col1X = 40;
-                doc.setFillColor(37, 99, 235); // Blue
-                doc.circle(col1X + 3, legendY - 1.5, 2.4, 'F');
-                doc.text("Warna 1: Ustadz Nawfal", col1X + 10, legendY);
-
-                // Warna 2: Ustadzah Ining
-                const col2X = 120;
-                doc.setFillColor(22, 163, 74); // Green
-                doc.circle(col2X + 3, legendY - 1.5, 2.4, 'F');
-                doc.text("Warna 2: Ustadzah Ining", col2X + 10, legendY);
-
-                // Warna 3: Ustadzah Rahma
-                const col3X = 200;
-                doc.setFillColor(217, 119, 6); // Amber
-                doc.circle(col3X + 3, legendY - 1.5, 2.4, 'F');
-                doc.text("Warna 3: Ustadzah Rahma", col3X + 10, legendY);
-
-               const filenameDate = reportFilterMode === 'month'
-                  ? getDisplayMonthLabel(reportMonth).replace(/\s+/g, '_')
-                  : `${reportStartDate}_sd_${reportEndDate}`;
-               doc.save(`Laporan_Hafalan_Kelas_${reportClass}_${filenameDate}.pdf`);
+               generateMonthlyReportPDF({
+                  logoUrl,
+                  reportFilterMode,
+                  reportMonth,
+                  reportStartDate,
+                  reportEndDate,
+                  reportClass,
+                  getDisplayMonthLabel,
+                  reportData
+               });
             };
 
 
@@ -1802,7 +1665,7 @@ function App() {
          />
 
          <div className="flex-1 flex flex-col h-screen overflow-hidden relative pb-16 lg:pb-0">
-            <main className={`flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 scroll-smooth ${['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) ? '!pt-0 lg:overflow-hidden lg:flex lg:flex-col' : ''}`}>
+            <main className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 !pt-0 scroll-smooth flex flex-col">
                {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
                   <Header
                      user={user}
@@ -1813,8 +1676,10 @@ function App() {
                      showGreeting={true}
                   />
                )}
-               <div key={activePage} className="animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out w-full h-full flex flex-col">
-                  {renderContent()}
+               <div key={activePage} className="animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out w-full flex-1 flex flex-col min-h-0">
+                  <Suspense fallback={<PageLoader />}>
+                     {renderContent()}
+                  </Suspense>
                </div>
             </main>
 

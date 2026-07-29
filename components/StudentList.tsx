@@ -10,8 +10,8 @@ interface StudentListProps {
   onViewHistory?: (student: Student) => void;
   readOnly?: boolean;
   initialClass?: string;
-  user: User;
-  onMenuClick: () => void;
+  user?: User;
+  onMenuClick?: () => void;
   notifications?: Student[];
   onDismissNotification?: (studentId: string) => void;
   onSearchClick?: () => void;
@@ -23,8 +23,8 @@ const StudentList: React.FC<StudentListProps> = ({
   onViewHistory, 
   readOnly = false, 
   initialClass = 'Semua',
-  user,
-  onMenuClick,
+  user = { name: 'Pengguna', role: 'teacher' },
+  onMenuClick = () => {},
   notifications = [],
   onDismissNotification,
   onSearchClick
@@ -109,7 +109,7 @@ const StudentList: React.FC<StudentListProps> = ({
   };
 
   return (
-    <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+    <div className="space-y-6 flex-1 flex flex-col min-h-0">
       {/* Sticky Container Wrapper */}
       <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none">
         <Header

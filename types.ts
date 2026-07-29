@@ -2,7 +2,7 @@ import React from 'react';
 
 export interface User {
   name: string;
-  role: 'teacher' | 'student';
+  role: 'teacher' | 'student' | 'siswa';
   avatar?: string;
   studentId?: string; // Optional: Link to a specific student ID if role is student
 }
@@ -14,7 +14,7 @@ export interface Student {
   avatar: string;
 
   // Progress Data
-  type?: 'Hafalan' | 'Tartili'; // Renamed Iqra to Tartili
+  type?: 'Hafalan' | 'Tartili' | 'Drill Munaqosah' | 'Drill Tartili'; // Renamed Iqra to Tartili
   currentJuz?: number;
   currentSurah: string; // Used for Surah Name OR "Iqra Jilid X" display string
   jenisSetoran?: 'Lanjut' | 'Mengulang' | 'Drill'; // New field for setoran type

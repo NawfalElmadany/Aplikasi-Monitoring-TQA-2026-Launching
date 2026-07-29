@@ -556,7 +556,7 @@ const CatatanPage: React.FC<CatatanPageProps> = ({
     };
 
     return (
-        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-auto lg:h-full">
+        <div className="space-y-6 flex-1 flex flex-col min-h-0">
             {/* Sticky Header & Tab Switcher Container */}
             <div className="sticky top-0 z-30 bg-slate-50 dark:bg-[#09120E] pt-4 pb-2 w-full flex-none no-print transition-colors duration-300">
                 {/* Header Section (Floating Card Style) */}
@@ -618,8 +618,8 @@ const CatatanPage: React.FC<CatatanPageProps> = ({
                 )}
             </div>
 
-            {/* Area Konten (Fixed Viewport) */}
-            <div className="flex-1 flex flex-col overflow-hidden pt-3 pb-6 pr-1 -mx-4 sm:-mx-8 px-4 sm:px-8 bg-slate-50 dark:bg-[#09120E] transition-colors duration-300">
+            {/* Area Konten */}
+            <div className="flex-1 flex flex-col overflow-y-auto pt-3 pb-6 pr-1 -mx-4 sm:-mx-8 px-4 sm:px-8 bg-slate-50 dark:bg-[#09120E] transition-colors duration-300">
 
                 {isStudent ? (
                     <>

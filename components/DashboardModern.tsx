@@ -421,7 +421,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
     if (isStudent) {
         return (
-            <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+            <div className="space-y-6 flex-1 flex flex-col min-h-0">
                 {/* Header Section (Floating Card Style on Desktop, Fixed Top Bar on Mobile) */}
                 <div className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 dark:bg-[#09120E]/90 backdrop-blur-md px-4 py-4 border-b border-slate-100 dark:border-[#1A2E24] md:hidden">
                     <Header
@@ -620,7 +620,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     }
 
     return (
-        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
+        <div className="space-y-6 flex-1 flex flex-col min-h-0">
             {/* Header Section (Floating Card Style on Desktop, Fixed Top Bar on Mobile) */}
             <div className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 dark:bg-[#09120E]/90 backdrop-blur-md px-4 py-4 border-b border-slate-100 dark:border-[#1A2E24] md:hidden">
                 <Header

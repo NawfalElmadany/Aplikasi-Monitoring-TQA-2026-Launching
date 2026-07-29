@@ -130,6 +130,15 @@ export const saveStudent = async (student: Student): Promise<void> => {
   }
 };
 
+export const deleteStudent = async (studentId: string): Promise<void> => {
+  const client = ensureSupabase();
+  const { error } = await client.from('students').delete().eq('id', studentId);
+
+  if (error) {
+    throw error;
+  }
+};
+
 export const loadAppSettings = async (): Promise<AppSettingsPayload | null> => {
   const client = ensureSupabase();
   const { data, error } = await client

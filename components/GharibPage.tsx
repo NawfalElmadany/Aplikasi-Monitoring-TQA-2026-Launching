@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RotateCw, CheckCircle2, ChevronRight, Plus, Users, Save, X, BookOpen, StickyNote, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { GharibEntry, Student, User } from '../types';
 import Header from './Header';
+import FloatingHeaderCard from './FloatingHeaderCard';
 
 interface GharibPageProps {
     students?: Student[];
@@ -538,7 +539,7 @@ const GharibPage: React.FC<GharibPageProps> = ({
             })() : (
                 <>
                     {/* Header */}
-                    <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none animate-in fade-in">
+                    <FloatingHeaderCard className="no-print">
                         <Header
                             user={user!}
                             onMenuClick={onMenuClick}
@@ -552,36 +553,36 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                 user?.role === 'teacher' && (
                                     <button
                                         onClick={() => setShowInput(true)}
-                                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors shadow-sm cursor-pointer"
+                                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-emerald-900/20 hover:scale-105 cursor-pointer text-sm"
                                     >
-                                        <Plus size={20} />
+                                        <Plus size={18} />
                                         <span>Catat Gharib</span>
                                     </button>
                                 )
                             }
                         />
-                    </div>
+                    </FloatingHeaderCard>
 
                     {/* Inline Input Form */}
                     {showInput && (
-                        <div className="bg-white dark:bg-[#121F18] border border-slate-200 dark:border-[#1A2E24] p-6 rounded-2xl shadow-lg animate-in slide-in-from-top-4">
+                        <div className="bg-white dark:bg-[#12231A] border border-emerald-100 dark:border-[#1E382B] p-6 rounded-3xl shadow-lg animate-in slide-in-from-top-4 my-6">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                <h3 className="font-extrabold text-slate-800 dark:text-white flex items-center gap-2 text-base sm:text-lg">
                                     <Users size={20} className="text-emerald-600 dark:text-emerald-400" />
                                     Jurnal Pembelajaran Gharib (Klasikal)
                                 </h3>
-                                <button onClick={() => setShowInput(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
+                                <button onClick={() => setShowInput(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-[#16291F]">
                                     <X size={20} />
                                 </button>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                 <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider mb-1">Pilih Kelas</label>
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider mb-1">Pilih Kelas</label>
                                     <select
                                         value={selectedClass}
                                         onChange={(e) => setSelectedClass(e.target.value)}
-                                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-[#09120E] border border-slate-200 dark:border-[#1A2E24] text-slate-700 dark:text-[#E2EAE5] rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold transition-colors cursor-pointer"
                                     >
                                         <option value="">Pilih Kelas</option>
                                         <option value="5B">5B</option>
@@ -593,18 +594,18 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider mb-1">Tanggal</label>
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider mb-1">Tanggal</label>
                                     <input
                                         type="date"
                                         value={date}
                                         onChange={(e) => setDate(e.target.value)}
-                                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-[#09120E] border border-slate-200 dark:border-[#1A2E24] text-slate-700 dark:text-[#E2EAE5] rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold transition-colors cursor-pointer"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider mb-1">Status Pembelajaran</label>
-                                    <div className="flex gap-4 items-center h-[38px]">
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider mb-1">Status Pembelajaran</label>
+                                    <div className="flex gap-4 items-center h-[42px]">
                                         <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 dark:text-[#E2EAE5] text-sm">
                                             <input
                                                 type="radio"
@@ -633,24 +634,24 @@ const GharibPage: React.FC<GharibPageProps> = ({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider mb-1">Materi / Halaman</label>
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider mb-1">Materi / Halaman</label>
                                     <input
                                         type="text"
                                         placeholder="Contoh: Hal. 21 atau Bab Tashil"
                                         value={material}
                                         onChange={(e) => setMaterial(e.target.value)}
-                                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-[#09120E] border border-slate-200 dark:border-[#1A2E24] text-slate-700 dark:text-[#E2EAE5] rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 font-semibold"
+                                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-bold transition-colors"
                                     />
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider mb-1">Catatan Tambahan</label>
+                                    <label className="block text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider mb-1">Catatan Tambahan</label>
                                     <textarea
                                         placeholder="Catat kendala siswa, atau info pertemuan klasikal berikutnya..."
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         rows={1}
-                                        className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-[#09120E] border border-slate-200 dark:border-[#1A2E24] text-slate-700 dark:text-[#E2EAE5] rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                                        className="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-medium transition-colors"
                                     />
                                 </div>
                             </div>
@@ -659,7 +660,7 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                 <button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-900/20 transition-all cursor-pointer hover:scale-105"
                                 >
                                     <Save size={16} />
                                     <span>Simpan Jurnal</span>
@@ -670,81 +671,70 @@ const GharibPage: React.FC<GharibPageProps> = ({
 
                     {user?.role === 'teacher' ? (
                         <>
-                            {/* Class Cards Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6">
-                                {(() => {
-                                    const cardThemes = [
-                                        "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300",
-                                        "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800/50 text-teal-700 dark:text-teal-300",
-                                        "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/50 text-cyan-700 dark:text-cyan-300",
-                                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50 text-green-700 dark:text-green-300",
-                                        "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-300"
-                                    ];
-                                    
-                                    return ['5B', '5C', '5D', '6C', '6D'].map((className, idx) => {
-                                        const count = localEntries.filter(s => s.className === className).length;
-                                        const themeClass = cardThemes[idx % 5];
-                                        return (
-                                            <button
-                                                key={className}
-                                                onClick={() => setViewingClass(className)}
-                                                className={`w-full border rounded-xl p-3.5 sm:p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md text-left relative overflow-hidden group ${themeClass}`}
-                                            >
-                                                <div className="relative z-10">
-                                                    <div className="flex items-center justify-between mb-2.5 sm:mb-4">
-                                                        <div className="p-1.5 sm:p-2 rounded-lg bg-white/40 dark:bg-black/10 text-current">
-                                                            <Users size={16} className="sm:w-6 sm:h-6" />
-                                                        </div>
-                                                        <div className="bg-white/50 dark:bg-black/20 font-extrabold text-[9px] sm:text-xs rounded-md px-2 py-0.5 sm:px-3 sm:py-1 text-current">
-                                                            Lihat Data
-                                                        </div>
-                                                    </div>
-                                                    <h3 className="text-sm sm:text-2xl font-black text-current mb-0.5 sm:mb-1 truncate">Kelas {className}</h3>
-                                                    <p className="text-slate-500 dark:text-slate-400 text-[10px] sm:text-sm font-semibold truncate">{count} Jurnal Gharib</p>
+                            {/* Class Cards Grid - Cohesive Emerald Glassmorphism */}
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6 mt-4">
+                                {['5B', '5C', '5D', '6C', '6D'].map((className) => {
+                                    const count = localEntries.filter(s => s.className === className).length;
+                                    return (
+                                        <button
+                                            key={className}
+                                            onClick={() => setViewingClass(className)}
+                                            className="w-full bg-white dark:bg-[#12231A] border border-emerald-100 dark:border-[#1E382B] rounded-2xl p-4 sm:p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-700/60 text-left relative overflow-hidden group shadow-sm"
+                                        >
+                                            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
+                                                    <Users size={20} />
                                                 </div>
-                                            </button>
-                                        );
-                                    });
-                                })()}
+                                                <span className="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-extrabold text-xs px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/40 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                                    Lihat Data
+                                                </span>
+                                            </div>
+                                            <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white mb-1">Kelas {className}</h3>
+                                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full inline-block border border-emerald-200/50 dark:border-emerald-800/30">
+                                                {count} Jurnal Gharib
+                                            </p>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             {/* Split Bottom Grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
                                 
                                 {/* Left Side: Logs Table */}
-                                <div className="lg:col-span-2 bg-[#F8FAFC]/60 dark:bg-[#111D16]/40 border border-slate-200/50 dark:border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm transition-colors duration-300 animate-in fade-in">
+                                <div className="lg:col-span-2 bg-white dark:bg-[#12231A] border border-emerald-100/60 dark:border-[#1E382B] rounded-3xl p-5 sm:p-6 shadow-sm transition-colors duration-300 animate-in fade-in">
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h3 className="text-lg font-black text-slate-800 dark:text-[#E2EAE5]">
                                                 Log Jurnal Gharib Kelas
                                             </h3>
-                                            <p className="text-xs text-slate-400 dark:text-[#8BA398] mt-0.5">Ringkasan progres materi terbaru.</p>
+                                            <p className="text-xs text-slate-500 dark:text-[#8BA398] mt-0.5">Ringkasan progres materi terbaru.</p>
                                         </div>
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-[#15231A] border border-slate-200 dark:border-white/10 rounded-full shrink-0 shadow-sm">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 rounded-full shrink-0 shadow-sm">
                                             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Live</span>
+                                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Live</span>
                                         </div>
                                     </div>
 
                                     {/* Baris Data sebagai Kartu UI */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-3.5">
                                         {localEntries.slice(0, 10).map((row, idx) => (
-                                            <div key={row.id || idx} className="bg-white dark:bg-[#15231A] border border-slate-100 dark:border-white/10 rounded-2xl p-4 sm:p-5 flex gap-4 sm:gap-6 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all">
+                                            <div key={row.id || idx} className="bg-slate-50/70 dark:bg-[#0C1A13] border border-slate-200/60 dark:border-[#1E382B] rounded-2xl p-4 sm:p-5 flex gap-4 sm:gap-6 shadow-sm hover:shadow-md hover:bg-white dark:hover:bg-[#152B20] transition-all">
                                                 {/* Kolom Kiri: Blok Tanggal */}
-                                                <div className="flex flex-col items-center justify-center border-r border-slate-100 dark:border-[#1A2E24] pr-4 sm:pr-6 min-w-[70px] sm:min-w-[85px] text-center">
+                                                <div className="flex flex-col items-center justify-center border-r border-slate-200/60 dark:border-[#1E382B] pr-4 sm:pr-6 min-w-[75px] sm:min-w-[85px] text-center">
                                                     {(() => {
                                                         const [year, month, day] = row.date.split('-');
                                                         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                                                         const monthName = months[parseInt(month) - 1] || '';
                                                         return (
                                                             <>
-                                                                <span className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white leading-none">
+                                                                <span className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 leading-none">
                                                                     {parseInt(day)}
                                                                 </span>
                                                                 <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-[#8BA398] mt-1">
                                                                     {monthName}
                                                                 </span>
-                                                                <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 dark:text-[#6B8578] mt-0.5">
                                                                     {year}
                                                                 </span>
                                                             </>
@@ -755,28 +745,28 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                                 {/* Kolom Tengah: Info Materi & Kelas */}
                                                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                                                     <div>
-                                                        <h4 className="text-base sm:text-lg font-black text-slate-800 dark:text-[#E2EAE5] leading-tight whitespace-nowrap">
+                                                        <h4 className="text-base sm:text-lg font-black text-slate-800 dark:text-white leading-tight">
                                                             {row.material.replace(/\s*-\s*/g, '-')}
                                                         </h4>
                                                         {row.notes && (
-                                                            <p className="text-xs text-slate-400 dark:text-[#8BA398] mt-1 font-semibold truncate max-w-[200px]" title={row.notes}>
+                                                            <p className="text-xs text-slate-500 dark:text-[#8BA398] mt-1 font-medium truncate max-w-[240px]" title={row.notes}>
                                                                 Catatan: {row.notes}
                                                             </p>
                                                         )}
                                                     </div>
                                                     
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-[#09120E] text-slate-500 dark:text-[#8BA398] text-[10px] sm:text-xs font-bold rounded-lg border border-slate-200/50 dark:border-white/5 w-fit mt-3 shadow-sm">
-                                                        <Users size={12} className="text-slate-400" />
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-[#12231A] text-slate-600 dark:text-[#9FB8AB] text-xs font-bold rounded-lg border border-slate-200/60 dark:border-[#1E382B] w-fit mt-3 shadow-sm">
+                                                        <Users size={12} className="text-emerald-600 dark:text-emerald-400" />
                                                         Kelas {row.className}
                                                     </span>
                                                 </div>
 
                                                 {/* Kolom Kanan: Status & Aksi */}
-                                                <div className="flex flex-col justify-between items-end min-w-[100px] sm:min-w-[145px] shrink-0">
-                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-extrabold border whitespace-nowrap shadow-sm ${
+                                                <div className="flex flex-col justify-between items-end min-w-[100px] sm:min-w-[140px] shrink-0">
+                                                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-extrabold border whitespace-nowrap shadow-sm ${
                                                         row.status === 'Lanjut' 
-                                                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/40 dark:border-emerald-500/10' 
-                                                            : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200/40 dark:border-amber-500/10'
+                                                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40' 
+                                                            : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40'
                                                     }`}>
                                                         {row.status}
                                                     </span>
@@ -784,14 +774,16 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                                     <div className="flex items-center gap-2 mt-4 shrink-0" onClick={(e) => e.stopPropagation()}>
                                                         <button 
                                                             onClick={() => handleEditClick(row)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-[#8BA398] hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-600 rounded-lg text-[10px] sm:text-xs font-bold transition-all bg-white dark:bg-[#111D16] cursor-pointer shadow-sm"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-200 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-[#16291F] rounded-lg text-xs font-bold transition-all bg-white dark:bg-[#12231A] cursor-pointer shadow-sm"
+                                                            title="Edit Jurnal"
                                                         >
                                                             <Pencil size={12} />
                                                             <span>Edit</span>
                                                         </button>
                                                         <button 
                                                             onClick={() => handleDeleteClick(row.id)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-rose-100 dark:border-rose-950/20 text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg text-[10px] sm:text-xs font-bold transition-all bg-white dark:bg-[#111D16] cursor-pointer shadow-sm"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-bold transition-all bg-white dark:bg-[#12231A] cursor-pointer shadow-sm"
+                                                            title="Hapus Jurnal"
                                                         >
                                                             <Trash2 size={12} />
                                                             <span>Hapus</span>
@@ -802,7 +794,7 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                         ))}
 
                                         {localEntries.length === 0 && (
-                                            <div className="text-center py-16 bg-white dark:bg-[#15231A] rounded-2xl border border-slate-100 dark:border-white/10 text-slate-400 dark:text-[#8BA398] font-medium">
+                                            <div className="text-center py-16 bg-slate-50 dark:bg-[#0C1A13] rounded-2xl border border-slate-200/60 dark:border-[#1E382B] text-slate-400 dark:text-[#6B8578] font-medium">
                                                 Belum ada jurnal Gharib yang dicatat.
                                             </div>
                                         )}
@@ -816,29 +808,29 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                                 setShowInput(true);
                                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                             }}
-                                            className="w-full py-3.5 mt-4 border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/50 dark:bg-[#15231A]/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all cursor-pointer text-sm shadow-sm"
+                                            className="w-full py-3.5 mt-4 border-2 border-dashed border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-[#0C1A13]/50 text-emerald-700 dark:text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-100/60 dark:hover:bg-[#152B20] hover:border-emerald-400 transition-all cursor-pointer text-sm shadow-sm"
                                         >
-                                            <Plus size={16} />
+                                            <Plus size={18} />
                                             <span>Tambah Jurnal Gharib</span>
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Right Side: Status Sidebar */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 flex flex-col gap-4 dark:bg-[#121F18] dark:border-[#1A2E24]">
+                                <div className="bg-white dark:bg-[#12231A] border border-emerald-100/60 dark:border-[#1E382B] rounded-3xl p-6 shadow-sm space-y-4">
                                     <div>
-                                        <h3 className="font-bold text-slate-800 dark:text-[#E2EAE5] text-lg">Status Gharib Hari Ini</h3>
-                                        <p className="text-slate-500 dark:text-[#8BA398] text-xs mt-1">Status dan jadwal pembelajaran Gharib aktif</p>
+                                        <h3 className="font-extrabold text-slate-800 dark:text-white text-lg">Status Gharib Hari Ini</h3>
+                                        <p className="text-slate-500 dark:text-[#8BA398] text-xs mt-1 font-medium">Status dan jadwal pembelajaran Gharib aktif</p>
                                     </div>
                                     
-                                    <div className="flex flex-col gap-4 mt-2">
-                                        <div className="bg-white dark:bg-[#09120E] border border-slate-100 dark:border-[#1A2E24] p-4 shadow-sm flex items-center gap-4 hover:border-emerald-200 transition-all rounded-xl">
-                                            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                                                <CheckCircle2 size={20} />
+                                    <div className="flex flex-col gap-3.5 pt-2">
+                                        <div className="bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/60 dark:border-[#1E382B] p-4 rounded-2xl flex items-center gap-4 hover:border-emerald-300 dark:hover:border-emerald-700/60 transition-all">
+                                            <div className="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800/40">
+                                                <CheckCircle2 size={22} />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider">KELAS TERCATAT HARI INI</p>
-                                                <p className="text-xl font-black text-slate-800 dark:text-[#E2EAE5] mt-0.5">
+                                                <p className="text-[10px] font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider">KELAS TERCATAT HARI INI</p>
+                                                <p className="text-lg font-black text-slate-800 dark:text-white mt-0.5">
                                                     {(() => {
                                                         const todayStr = new Date().toISOString().slice(0, 10);
                                                         const todayEntries = localEntries.filter(e => e.date === todayStr);
@@ -849,13 +841,13 @@ const GharibPage: React.FC<GharibPageProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="bg-white dark:bg-[#09120E] border border-slate-100 dark:border-[#1A2E24] p-4 shadow-sm flex items-center gap-4 hover:border-emerald-200 transition-all rounded-xl">
-                                            <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                                                <BookOpen size={20} />
+                                        <div className="bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/60 dark:border-[#1E382B] p-4 rounded-2xl flex items-center gap-4 hover:border-emerald-300 dark:hover:border-emerald-700/60 transition-all">
+                                            <div className="w-11 h-11 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 flex items-center justify-center shrink-0 border border-teal-200 dark:border-teal-800/40">
+                                                <BookOpen size={22} />
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-bold text-slate-400 dark:text-[#8BA398] uppercase tracking-wider">LOG TERAKHIR DIUPDATE</p>
-                                                <p className="text-sm font-bold text-slate-800 dark:text-[#E2EAE5] mt-0.5 truncate">
+                                                <p className="text-[10px] font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-wider">LOG TERAKHIR DIUPDATE</p>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5 truncate">
                                                     {localEntries.length > 0 ? `${localEntries[0].className}: ${localEntries[0].material}` : 'Belum ada data'}
                                                 </p>
                                             </div>

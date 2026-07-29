@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Student, User as UserType } from '../types';
 import Header from './Header';
+import FloatingHeaderCard from './FloatingHeaderCard';
 import { Search, ChevronRight, ChevronLeft, Save, AlignLeft, BookOpen, User, Calendar, CheckCircle } from 'lucide-react';
 import { getAssignedTeacher } from '../services/appData';
 
@@ -383,9 +384,9 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
     }, [selectedStudent, isQuranInput, isJilidInput, formData, jenisSetoran, setoranBerdasarkanAyat]);
 
     return (
-        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full">
-            {/* Sticky Container Wrapper */}
-            <div className={`sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50 dark:from-[#121F18] dark:to-[#1A2E24]/30 p-6 rounded-2xl shadow-sm border border-emerald-400 dark:border-[#1A2E24] flex justify-between items-center my-4 flex-none transition-all duration-300 ${selectedStudent || showToast ? 'hidden lg:flex' : 'flex'}`}>
+        <div className="space-y-6 flex-1 flex flex-col min-h-0">
+            {/* Header Card */}
+            <FloatingHeaderCard className={`my-4 flex-none transition-all duration-300 no-print ${selectedStudent || showToast ? 'hidden lg:flex' : 'flex'}`}>
                 <Header
                     user={user}
                     onMenuClick={onMenuClick}
@@ -396,24 +397,24 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                     title="Input Setoran"
                     subtitle="Pilih siswa dan catat perkembangan hafalan harian mereka."
                 />
-            </div>
+            </FloatingHeaderCard>
 
             {/* Split-Pane Wrapper */}
-            <div className="w-full overflow-x-hidden flex flex-col lg:flex-row gap-6 mt-0 lg:mt-4 h-full px-4 sm:px-5">
+            <div className="w-full overflow-x-hidden flex flex-col lg:flex-row gap-6 mt-0 lg:mt-4 flex-1 min-h-0">
                 {/* LEFT COLUMN: Student List */}
                 <div className={`w-full lg:w-1/3 flex-col gap-4 overflow-hidden h-full flex-none ${selectedStudent || showToast ? 'hidden lg:flex' : 'flex'}`}>
-                    {/* Controls (Filters & Search) - flex-none */}
-                    <div className="flex-none flex flex-col gap-4">
+                    {/* Controls (Filters & Search) */}
+                    <div className="flex-none flex flex-col gap-3">
                         {/* Class Filters */}
-                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border flex gap-1 overflow-x-auto">
+                        <div className="bg-white dark:bg-[#12231A] p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-[#1E382B] flex gap-1.5 overflow-x-auto scrollbar-hide">
                             {classes.map(cls => (
                                 <button
                                     key={cls}
                                     onClick={() => setSelectedClass(cls)}
-                                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap
+                                    className={`flex-1 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer
                                         ${selectedClass === cls
-                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-250'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:bg-dark-card-hover'}`}
+                                            ? 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                            : 'bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/50 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                 >
                                     {cls === 'Semua' ? 'Semua Kelas' : `Kelas ${cls}`}
                                 </button>
@@ -421,15 +422,15 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                         </div>
 
                         {/* Pengampu Filters */}
-                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border flex gap-1 overflow-x-auto">
+                        <div className="bg-white dark:bg-[#12231A] p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-[#1E382B] flex gap-1.5 overflow-x-auto scrollbar-hide">
                             {['Semua', 'Ustadz Nawfal', 'Ustadzah Ining', 'Ustadzah Rahma'].map(t => (
                                 <button
                                     key={t}
                                     onClick={() => setSelectedTeacher(t)}
-                                    className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap
+                                    className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer
                                         ${selectedTeacher === t
-                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-250'
-                                            : 'text-slate-500 dark:text-gray-400 hover:bg-slate-50 dark:bg-dark-card-hover'}`}
+                                            ? 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                            : 'bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/50 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                 >
                                     {t === 'Semua' ? 'Semua Guru' : t.replace('Ustadz ', 'Ust. ').replace('Ustadzah ', 'Ustd. ')}
                                 </button>
@@ -438,49 +439,49 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
 
                         {/* Search */}
                         <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578]" size={18} />
                             <input
                                 type="text"
                                 placeholder="Cari Siswa..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-dark-border focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none shadow-sm transition-all text-slate-700"
+                                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-[#1E382B] bg-white dark:bg-[#0C1A13] text-slate-800 dark:text-[#E2EAE5] placeholder-slate-400 dark:placeholder-[#6B8578] focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm transition-all font-medium"
                             />
                         </div>
                     </div>
 
-                    {/* List - flex-1 scrollable */}
-                    <div className="flex-1 bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden flex flex-col h-full">
-                        <div className="p-4 border-b border-gray-50 bg-gray-50 dark:bg-dark-card-hover/50 flex-none">
-                            <h3 className="font-bold text-gray-700 dark:text-gray-200 text-sm uppercase tracking-wide">
-                                Daftar Siswa ({filteredStudents.length})
+                    {/* Student List Cards Container */}
+                    <div className="flex-1 bg-white dark:bg-[#12231A] rounded-2xl shadow-sm border border-slate-100 dark:border-[#1E382B] overflow-hidden flex flex-col h-full">
+                        <div className="p-4 border-b border-slate-100 dark:border-[#1E382B] bg-slate-50 dark:bg-[#0C1A13] flex-none">
+                            <h3 className="font-bold text-slate-700 dark:text-[#E2EAE5] text-xs uppercase tracking-wide">
+                                Daftar Siswa <span className="text-emerald-700 dark:text-emerald-400 font-bold">({filteredStudents.length})</span>
                             </h3>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide pb-24 pr-1">
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-hide pb-24 pr-1">
                             {filteredStudents.map(student => (
                                 <button
                                     key={student.id}
                                     onClick={() => setSelectedStudent(student)}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left
+                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left cursor-pointer
                                         ${selectedStudent?.id === student.id
-                                            ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-200'
-                                            : 'hover:bg-slate-50 dark:bg-dark-card-hover border border-transparent'}`}
+                                            ? 'bg-emerald-50 dark:bg-[#152B20] border border-emerald-300 dark:border-emerald-700/60 ring-1 ring-emerald-400/40 shadow-sm'
+                                            : 'hover:bg-slate-50 dark:hover:bg-[#16291F] border border-transparent'}`}
                                 >
                                     <img
                                         src={student.avatar}
                                         alt={student.name}
-                                        className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                                        className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-[#1E382B] bg-slate-100 dark:bg-[#0C1A13]"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <p className={`font-bold text-sm truncate ${selectedStudent?.id === student.id ? 'text-emerald-900' : 'text-slate-800 dark:text-white'}`}>
+                                        <p className={`font-bold text-sm truncate ${selectedStudent?.id === student.id ? 'text-emerald-950 dark:text-emerald-300 font-extrabold' : 'text-slate-800 dark:text-white'}`}>
                                             {student.name}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-                                            <BookOpen size={10} />
-                                            {student.currentSurah}
+                                        <p className="text-xs text-slate-500 dark:text-[#8BA398] truncate flex items-center gap-1 mt-0.5">
+                                            <BookOpen size={11} className="text-emerald-600 dark:text-emerald-400" />
+                                            {student.currentSurah || 'Belum ada setoran'}
                                         </p>
                                     </div>
-                                    <ChevronRight size={16} className={`transition-colors ${selectedStudent?.id === student.id ? 'text-emerald-500' : 'text-slate-300'}`} />
+                                    <ChevronRight size={16} className={`transition-colors ${selectedStudent?.id === student.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-[#6B8578]'}`} />
                                 </button>
                             ))}
                         </div>
@@ -489,44 +490,44 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
 
                 {/* RIGHT COLUMN: Input Form */}
                 <div className={`flex-1 flex-col h-full overflow-hidden ${!selectedStudent && !showToast ? 'hidden lg:flex' : 'flex'}`}>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border h-full flex flex-col overflow-hidden relative">
+                    <div className="bg-white dark:bg-[#12231A] rounded-2xl shadow-sm border border-slate-100 dark:border-[#1E382B] h-full flex flex-col overflow-hidden relative transition-colors">
                         {!selectedStudent ? (
                             showToast ? (
                                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in-95 duration-300">
-                                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-100/50 dark:shadow-none">
+                                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-600/20 border border-emerald-200 dark:border-emerald-800/40">
                                         <CheckCircle size={44} className="stroke-[2.5]" />
                                     </div>
-                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Berhasil Tersimpan!</h3>
-                                    <p className="max-w-md text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                        Data setoran untuk <strong className="font-semibold text-slate-700 dark:text-slate-300">{toastStudentName}</strong> telah berhasil disimpan.
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Berhasil Tersimpan!</h3>
+                                    <p className="max-w-md text-sm text-slate-500 dark:text-[#8BA398] leading-relaxed">
+                                        Data setoran untuk <strong className="font-semibold text-slate-700 dark:text-slate-200">{toastStudentName}</strong> telah berhasil disimpan.
                                     </p>
                                     <button
                                         onClick={() => setShowToast(false)}
-                                        className="mt-6 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-sm transition-colors cursor-pointer"
+                                        className="mt-6 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
                                     >
                                         Kembali ke Daftar Siswa
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center animate-in zoom-in-95 duration-300">
-                                    <div className="w-24 h-24 bg-gray-50 dark:bg-dark-card-hover rounded-full flex items-center justify-center mb-6">
-                                        <User size={48} className="text-gray-300" />
+                                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-[#6B8578] p-8 text-center animate-in zoom-in-95 duration-300">
+                                    <div className="w-24 h-24 bg-slate-50 dark:bg-[#0C1A13] rounded-full flex items-center justify-center mb-6 border border-slate-200/60 dark:border-[#1E382B]">
+                                        <User size={48} className="text-slate-300 dark:text-[#4F6C5E]" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">Belum ada siswa dipilih</h3>
-                                    <p className="max-w-xs text-sm">Pilih siswa dari daftar di sebelah kiri untuk mulai menginput setoran hafalan atau tartili.</p>
+                                    <h3 className="text-xl font-bold text-slate-700 dark:text-[#E2EAE5] mb-2">Belum ada siswa dipilih</h3>
+                                    <p className="max-w-xs text-sm text-slate-500 dark:text-[#8BA398]">Pilih siswa dari daftar di sebelah kiri untuk mulai menginput setoran hafalan atau tartili.</p>
                                 </div>
                             )
                         ) : (
                             <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
                                 {/* Header Form */}
-                                <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 lg:p-8 text-white shrink-0 relative overflow-hidden flex-none">
+                                <div className="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 dark:from-[#0B1E15] dark:via-[#11271D] dark:to-[#08150E] p-6 lg:p-8 text-white shrink-0 relative overflow-hidden flex-none border-b border-emerald-700/30 dark:border-[#1E382B]">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-amber-400/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/3"></div>
+                                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-teal-400/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/3"></div>
                                     
                                     {/* Back Button on Mobile */}
                                     <button
                                         onClick={() => setSelectedStudent(null)}
-                                        className="lg:hidden mb-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/5 text-white text-xs font-bold transition-all relative z-20 cursor-pointer"
+                                        className="lg:hidden mb-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold transition-all relative z-20 cursor-pointer"
                                     >
                                         <ChevronLeft size={14} />
                                         <span>Kembali</span>
@@ -538,40 +539,40 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             <img
                                                 src={selectedStudent.avatar}
                                                 alt={selectedStudent.name}
-                                                className="w-20 h-20 rounded-full border-4 border-white/10 shadow-xl object-cover bg-slate-800 relative z-10"
+                                                className="w-20 h-20 rounded-full border-4 border-white/20 shadow-xl object-cover bg-slate-800 relative z-10"
                                             />
                                         </div>
                                         <div>
-                                            <h2 className="text-3xl font-bold tracking-tight text-white">{selectedStudent.name}</h2>
-                                            <div className="flex items-center gap-4 mt-2 text-slate-300 text-sm font-medium">
-                                                <span className="bg-white/10 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm shadow-sm">{selectedClass}</span>
+                                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{selectedStudent.name}</h2>
+                                            <div className="flex items-center gap-3 mt-2 text-emerald-100 text-xs sm:text-sm font-medium">
+                                                <span className="bg-white/15 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm shadow-sm font-bold">Kelas {selectedClass}</span>
                                                 <span className="flex items-center gap-1.5 opacity-90">
                                                     <Calendar size={14} className="text-emerald-400" />
-                                                    Terakhir: {selectedStudent.lastUpdate}
+                                                    Terakhir: {selectedStudent.lastUpdate || 'Baru saja'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Form Content */}
-                                <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 scrollbar-hide bg-slate-50">
-                                    <div className="max-w-3xl mx-auto space-y-6 sm:space-y-10">
+                                {/* Form Content Container */}
+                                <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scrollbar-hide bg-slate-50 dark:bg-[#09120E] transition-colors">
+                                    <div className="max-w-3xl mx-auto space-y-6">
                                         {/* Type Toggle */}
-                                        <div className="bg-slate-200/60 dark:bg-[#124233]/40 p-1.5 rounded-full flex shadow-inner max-w-xs mx-auto relative border border-transparent dark:border-white/5">
+                                        <div className="bg-slate-200/80 dark:bg-[#0C1A13] p-1.5 rounded-full flex shadow-inner max-w-xs mx-auto relative border border-slate-200/50 dark:border-[#1E382B]">
                                             <button
                                                 onClick={() => setSetoranType('Hafalan')}
-                                                className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 ${setoranType === 'Hafalan'
-                                                    ? 'bg-white dark:bg-[#20C997] text-slate-800 dark:text-[#0B1D17] shadow-md dark:shadow-emerald-950/20'
-                                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'}`}
+                                                className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 cursor-pointer ${setoranType === 'Hafalan'
+                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                                    : 'text-slate-600 dark:text-[#8BA398] hover:text-slate-900 dark:hover:text-white font-bold'}`}
                                             >
                                                 Hafalan
                                             </button>
                                             <button
                                                 onClick={() => setSetoranType('Tartili')}
-                                                className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 ${setoranType === 'Tartili'
-                                                    ? 'bg-white dark:bg-[#20C997] text-slate-800 dark:text-[#0B1D17] shadow-md dark:shadow-emerald-950/20'
-                                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'}`}
+                                                className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 cursor-pointer ${setoranType === 'Tartili'
+                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                                    : 'text-slate-600 dark:text-[#8BA398] hover:text-slate-900 dark:hover:text-white font-bold'}`}
                                             >
                                                 Tartili
                                             </button>
@@ -580,33 +581,33 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                         {/* Dynamic Form Material Selector */}
                                         <div className="space-y-6">
                                             {setoranType === 'Tartili' && (
-                                                <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 w-full">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 sm:mb-4 block">Bahan Tartili</label>
+                                                <div className="bg-white dark:bg-[#12231A] rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 dark:border-[#1E382B] w-full transition-colors">
+                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 sm:mb-4 block">Bahan Tartili</label>
                                                     <div className="w-full grid grid-cols-3 gap-2 sm:gap-3">
                                                         <button
                                                             type="button"
                                                             onClick={() => setTartiliMaterial('Jilid')}
-                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate ${tartiliMaterial === 'Jilid'
-                                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm shadow-emerald-100/50'
-                                                                : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate cursor-pointer ${tartiliMaterial === 'Jilid'
+                                                                ? 'bg-emerald-50 dark:bg-[#183327] border-emerald-500 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-sm'
+                                                                : 'bg-slate-50 dark:bg-[#0C1A13] border-slate-200 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                                         >
                                                             Iqra / Jilid
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setTartiliMaterial('Al-Quran')}
-                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate ${tartiliMaterial === 'Al-Quran'
-                                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm shadow-emerald-100/50'
-                                                                : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate cursor-pointer ${tartiliMaterial === 'Al-Quran'
+                                                                ? 'bg-emerald-50 dark:bg-[#183327] border-emerald-500 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-sm'
+                                                                : 'bg-slate-50 dark:bg-[#0C1A13] border-slate-200 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                                         >
                                                             Al-Quran
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setTartiliMaterial('Gharib')}
-                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate ${tartiliMaterial === 'Gharib'
-                                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm shadow-emerald-100/50'
-                                                                : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                                                            className={`py-2.5 sm:py-3 px-1 sm:px-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all text-center whitespace-nowrap truncate cursor-pointer ${tartiliMaterial === 'Gharib'
+                                                                ? 'bg-emerald-50 dark:bg-[#183327] border-emerald-500 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-sm'
+                                                                : 'bg-slate-50 dark:bg-[#0C1A13] border-slate-200 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                                         >
                                                             Gharib
                                                         </button>
@@ -615,16 +616,16 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             )}
 
                                             {/* Status Input: Lanjut/Mengulang/Drill */}
-                                            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 w-full">
-                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 sm:mb-4 block">Status Kemajuan</label>
+                                            <div className="bg-white dark:bg-[#12231A] rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 dark:border-[#1E382B] w-full transition-colors">
+                                                <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 sm:mb-4 block">Status Kemajuan</label>
                                                 <div className="flex gap-2 sm:gap-4">
                                                     {['Lanjut', 'Mengulang', 'Drill'].map(mode => (
                                                         <button
                                                             key={mode}
                                                             onClick={() => setJenisSetoran(mode as any)}
-                                                            className={`flex-1 py-2.5 sm:py-3 px-1 sm:px-6 rounded-xl sm:rounded-2xl text-[11px] sm:text-sm font-bold border-2 transition-all truncate ${jenisSetoran === mode
-                                                                ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
-                                                                : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}
+                                                            className={`flex-1 py-2.5 sm:py-3 px-1 sm:px-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold border-2 transition-all truncate cursor-pointer ${jenisSetoran === mode
+                                                                ? 'bg-emerald-50 dark:bg-[#183327] border-emerald-500 dark:border-emerald-400 text-emerald-700 dark:text-emerald-300 font-extrabold shadow-sm'
+                                                                : 'bg-slate-50 dark:bg-[#0C1A13] border-slate-200 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                                         >
                                                             {mode}
                                                         </button>
@@ -633,25 +634,25 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             </div>
 
                                             {/* Date Input */}
-                                            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 w-full">
-                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">Tanggal Setoran</label>
+                                            <div className="bg-white dark:bg-[#12231A] rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 dark:border-[#1E382B] w-full transition-colors">
+                                                <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block">Tanggal Setoran</label>
                                                 <div className="relative">
                                                     <input
                                                         type="date"
                                                         value={inputDate}
                                                         onChange={(e) => setInputDate(e.target.value)}
-                                                        className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none font-bold text-slate-700 shadow-inner transition-all cursor-pointer"
+                                                        className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none font-bold text-slate-800 dark:text-[#E2EAE5] transition-all cursor-pointer"
                                                     />
                                                 </div>
                                             </div>
 
                                             {/* Form Fields Wrapper */}
-                                            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 space-y-4 sm:space-y-6">
+                                            <div className="bg-white dark:bg-[#12231A] rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 dark:border-[#1E382B] space-y-4 sm:space-y-6 transition-colors">
                                                 {isQuranInput ? (
                                                     <>
                                                         {jenisSetoran === 'Drill' ? (
-                                                            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                                                                <span className="text-sm font-bold text-slate-700">Drill Berdasarkan Ayat?</span>
+                                                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1E382B] pb-4">
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-[#E2EAE5]">Drill Berdasarkan Ayat?</span>
                                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                                     <input
                                                                         type="checkbox"
@@ -659,7 +660,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                                         onChange={(e) => setSetoranBerdasarkanAyat(e.target.checked)}
                                                                         className="sr-only peer"
                                                                     />
-                                                                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+                                                                    <div className="w-11 h-6 bg-slate-200 dark:bg-[#0C1A13] rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                                                 </label>
                                                             </div>
                                                         ) : null}
@@ -667,31 +668,31 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                         {jenisSetoran === 'Drill' && !setoranBerdasarkanAyat ? (
                                                             <div className="grid grid-cols-2 gap-6">
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Surah Mulai</label>
+                                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Surah Mulai</label>
                                                                     <div className="relative">
                                                                         <select
                                                                             value={formData.drillStartSurah}
                                                                             onChange={(e) => setFormData({ ...formData, drillStartSurah: e.target.value })}
-                                                                            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none transition-all font-bold text-slate-700 appearance-none shadow-sm hover:border-slate-300"
+                                                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none transition-all font-bold text-slate-800 dark:text-[#E2EAE5] appearance-none cursor-pointer"
                                                                         >
                                                                             <option value="" disabled>Pilih Surah</option>
                                                                             {surahs30.map(s => <option key={s} value={s}>{s}</option>)}
                                                                         </select>
-                                                                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={18} />
+                                                                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] rotate-90 pointer-events-none" size={18} />
                                                                     </div>
                                                                 </div>
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Surah Selesai</label>
+                                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Surah Selesai</label>
                                                                     <div className="relative">
                                                                         <select
                                                                             value={formData.drillEndSurah}
                                                                             onChange={(e) => setFormData({ ...formData, drillEndSurah: e.target.value })}
-                                                                            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none transition-all font-bold text-slate-700 appearance-none shadow-sm hover:border-slate-300"
+                                                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none transition-all font-bold text-slate-800 dark:text-[#E2EAE5] appearance-none cursor-pointer"
                                                                         >
                                                                             <option value="" disabled>Pilih Surah</option>
                                                                             {surahs30.map(s => <option key={s} value={s}>{s}</option>)}
                                                                         </select>
-                                                                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={18} />
+                                                                        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] rotate-90 pointer-events-none" size={18} />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -699,12 +700,12 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                             <>
                                                                 <div className="grid grid-cols-12 gap-3 sm:gap-6">
                                                                     <div className="col-span-4">
-                                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Juz</label>
+                                                                        <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Juz</label>
                                                                         <div className="relative">
                                                                             <select
                                                                                 value={formData.currentJuz}
                                                                                 onChange={(e) => setFormData({ ...formData, currentJuz: parseInt(e.target.value) })}
-                                                                                className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none font-bold text-slate-700 appearance-none shadow-sm transition-all"
+                                                                                className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none font-bold text-slate-800 dark:text-[#E2EAE5] appearance-none cursor-pointer transition-all"
                                                                             >
                                                                                 <option value={30}>Juz 30</option>
                                                                                 <option value={29}>Juz 29</option>
@@ -719,40 +720,40 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                                                 <option value={2}>Juz 2</option>
                                                                                 <option value={1}>Juz 1</option>
                                                                             </select>
-                                                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={18} />
+                                                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] rotate-90 pointer-events-none" size={18} />
                                                                         </div>
                                                                     </div>
                                                                     <div className="col-span-8">
-                                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Surah</label>
+                                                                        <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Surah</label>
                                                                         <div className="relative">
                                                                             <select
                                                                                 value={formData.selectedSurah}
                                                                                 onChange={(e) => setFormData({ ...formData, selectedSurah: e.target.value })}
-                                                                                className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none transition-all font-bold text-slate-700 appearance-none shadow-sm hover:border-slate-300"
+                                                                                className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none transition-all font-bold text-slate-800 dark:text-[#E2EAE5] appearance-none cursor-pointer"
                                                                             >
                                                                                 <option value="" disabled>Pilih Surah</option>
                                                                                 {availableSurahs.map(s => <option key={s} value={s}>{s}</option>)}
                                                                             </select>
-                                                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={18} />
+                                                                            <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] rotate-90 pointer-events-none" size={18} />
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Ayat</label>
+                                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Ayat</label>
                                                                     <div className="grid grid-cols-2 gap-4 w-full">
                                                                         <input
                                                                             type="number"
                                                                             placeholder="Mulai"
                                                                             value={formData.verseStart}
                                                                             onChange={(e) => setFormData({ ...formData, verseStart: e.target.value })}
-                                                                            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none text-center font-bold text-slate-700 shadow-inner transition-all placeholder:text-slate-300"
+                                                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-center font-bold text-slate-800 dark:text-[#E2EAE5] transition-all placeholder:text-slate-400 dark:placeholder-[#6B8578]"
                                                                         />
                                                                         <input
                                                                             type="number"
                                                                             placeholder="Akhir"
                                                                             value={formData.verseEnd}
                                                                             onChange={(e) => setFormData({ ...formData, verseEnd: e.target.value })}
-                                                                            className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none text-center font-bold text-slate-700 shadow-inner transition-all placeholder:text-slate-300"
+                                                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-center font-bold text-slate-800 dark:text-[#E2EAE5] transition-all placeholder:text-slate-400 dark:placeholder-[#6B8578]"
                                                                         />
                                                                     </div>
                                                                 </div>
@@ -763,37 +764,37 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                     <>
                                                         {!isGharibInput && (
                                                             <div>
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">
+                                                                <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">
                                                                     {jenisSetoran === 'Drill' ? 'Jilid Drill' : 'Jilid'}
                                                                 </label>
                                                                 <div className="relative">
                                                                     <select
                                                                         value={formData.iqraLevel}
                                                                         onChange={(e) => setFormData({ ...formData, iqraLevel: parseInt(e.target.value) })}
-                                                                        className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none font-bold text-slate-700 appearance-none shadow-sm transition-all"
+                                                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none font-bold text-slate-800 dark:text-[#E2EAE5] appearance-none cursor-pointer transition-all"
                                                                     >
                                                                         {iqraLevels.map(l => <option key={l} value={l}>Jilid {l}</option>)}
                                                                     </select>
-                                                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={18} />
+                                                                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] rotate-90 pointer-events-none" size={18} />
                                                                 </div>
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block ml-1">Halaman</label>
+                                                            <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Halaman</label>
                                                             <div className="grid grid-cols-2 gap-4 w-full">
                                                                 <input
                                                                     type="text"
                                                                     placeholder="Mulai"
                                                                     value={formData.page}
                                                                     onChange={(e) => setFormData({ ...formData, page: e.target.value })}
-                                                                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none text-center font-bold text-slate-700 shadow-inner transition-all placeholder:text-slate-300"
+                                                                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-center font-bold text-slate-800 dark:text-[#E2EAE5] transition-all placeholder:text-slate-400 dark:placeholder-[#6B8578]"
                                                                 />
                                                                 <input
                                                                     type="text"
                                                                     placeholder="Akhir"
                                                                     value={formData.pageEnd}
                                                                     onChange={(e) => setFormData({ ...formData, pageEnd: e.target.value })}
-                                                                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none text-center font-bold text-slate-700 shadow-inner transition-all placeholder:text-slate-300"
+                                                                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-center font-bold text-slate-800 dark:text-[#E2EAE5] transition-all placeholder:text-slate-400 dark:placeholder-[#6B8578]"
                                                                 />
                                                             </div>
                                                         </div>
@@ -803,25 +804,25 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
 
                                             {/* Score Section */}
                                             <div className="grid grid-cols-2 gap-3 sm:gap-8 w-full">
-                                                <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">Nilai</label>
+                                                <div className="bg-white dark:bg-[#12231A] p-4 sm:p-6 rounded-3xl border border-slate-100 dark:border-[#1E382B] shadow-sm w-full transition-colors">
+                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block">Nilai</label>
                                                     <div className="relative">
                                                         <input
                                                             type="number"
                                                             value={formData.score}
                                                             onChange={handleScoreChange}
                                                             placeholder="0"
-                                                            className="w-full p-2 bg-transparent border-none focus:ring-0 outline-none text-4xl sm:text-5xl font-black text-slate-800 placeholder-slate-200 tracking-tight"
+                                                            className="w-full p-2 bg-transparent border-none focus:ring-0 outline-none text-4xl sm:text-5xl font-black text-slate-800 dark:text-white placeholder-slate-200 dark:placeholder-[#2A4437] tracking-tight"
                                                         />
-                                                        <span className="absolute top-2 right-0 text-[10px] sm:text-sm font-bold text-slate-400 bg-slate-100 px-2 py-0.5 sm:py-1 rounded-lg">PTS</span>
+                                                        <span className="absolute top-2 right-0 text-[10px] sm:text-xs font-bold text-slate-500 dark:text-[#9FB8AB] bg-slate-100 dark:bg-[#0C1A13] px-2 py-1 rounded-lg border border-slate-200/50 dark:border-[#1E382B]">PTS</span>
                                                     </div>
                                                 </div>
-                                                <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col w-full">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">Predikat</label>
-                                                    <div className={`flex-1 w-full flex items-center justify-center rounded-2xl text-sm sm:text-lg font-bold border-2 transition-all duration-300
-                                                        ${formData.status === 'Mumtaz' ? 'bg-emerald-50 border-emerald-400 text-emerald-700 shadow-[0_4px_15px_-3px_rgba(52,211,153,0.3)]' :
-                                                            formData.status === 'Perlu Bimbingan' ? 'bg-rose-50 border-rose-400 text-rose-700 shadow-[0_4px_15px_-3px_rgba(251,113,133,0.3)]' :
-                                                                'bg-amber-50 border-amber-400 text-amber-700 shadow-[0_4px_15px_-3px_rgba(245,158,11,0.3)]'
+                                                <div className="bg-white dark:bg-[#12231A] p-4 sm:p-6 rounded-3xl border border-slate-100 dark:border-[#1E382B] shadow-sm flex flex-col w-full transition-colors">
+                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block">Predikat</label>
+                                                    <div className={`flex-1 w-full flex items-center justify-center rounded-2xl text-sm sm:text-base font-extrabold border-2 transition-all duration-300
+                                                        ${formData.status === 'Mumtaz' ? 'bg-emerald-50 dark:bg-[#152B20] border-emerald-400 dark:border-emerald-700/60 text-emerald-700 dark:text-emerald-300' :
+                                                            formData.status === 'Perlu Bimbingan' ? 'bg-rose-50 dark:bg-[#2B1519] border-rose-400 dark:border-rose-700/60 text-rose-700 dark:text-rose-300' :
+                                                                'bg-amber-50 dark:bg-[#2B2315] border-amber-400 dark:border-amber-700/60 text-amber-700 dark:text-amber-300'
                                                         }`}>
                                                         {formData.status}
                                                     </div>
@@ -829,17 +830,17 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             </div>
 
                                             {/* Notes */}
-                                            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 w-full">
+                                            <div className="bg-white dark:bg-[#12231A] rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 dark:border-[#1E382B] w-full transition-colors">
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                    <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest flex items-center gap-2">
                                                         <AlignLeft size={14} /> Catatan Guru
                                                     </label>
-                                                    <label className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-slate-50 rounded-lg transition-colors">
-                                                        <span className={`text-xs font-bold transition-colors ${formData.requiresAttention ? 'text-rose-500' : 'text-slate-400 group-hover:text-slate-500'}`}>
+                                                    <label className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-slate-50 dark:hover:bg-[#16291F] rounded-lg transition-colors">
+                                                        <span className={`text-xs font-bold transition-colors ${formData.requiresAttention ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-[#6B8578] group-hover:text-slate-500'}`}>
                                                             Perlu Perhatian?
                                                         </span>
-                                                        <div className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors duration-300 ${formData.requiresAttention ? 'bg-rose-500' : 'bg-slate-200'}`}>
-                                                            <div className={`w-4 h-4 bg-white dark:bg-dark-card rounded-full shadow-sm transform transition-transform duration-300 ${formData.requiresAttention ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                        <div className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors duration-300 ${formData.requiresAttention ? 'bg-rose-500' : 'bg-slate-200 dark:bg-[#0C1A13]'}`}>
+                                                            <div className={`w-4 h-4 bg-white dark:bg-white rounded-full shadow-sm transform transition-transform duration-300 ${formData.requiresAttention ? 'translate-x-4' : 'translate-x-0'}`} />
                                                         </div>
                                                         <input
                                                             type="checkbox"
@@ -852,7 +853,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                 <textarea
                                                     value={formData.notes}
                                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white dark:bg-dark-card focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/10 outline-none text-sm min-h-[120px] resize-none transition-all placeholder-slate-400/70 text-slate-700 leading-relaxed"
+                                                    className="w-full p-4 rounded-xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-sm min-h-[120px] resize-none transition-all placeholder-slate-400 dark:placeholder-[#6B8578] text-slate-800 dark:text-[#E2EAE5] leading-relaxed font-medium"
                                                     placeholder="Tuliskan catatan perkembangan hafalan siswa..."
                                                 ></textarea>
                                             </div>
@@ -861,21 +862,21 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                 </div>
 
                                 {/* Footer / Actions */}
-                                <div className="p-4 border-t border-slate-100 bg-white dark:bg-dark-card shrink-0 z-20 shadow-[0_-5px_20px_-10px_rgba(0,0,0,0.05)] flex-none w-full max-w-full flex justify-end items-center gap-4 px-4">
+                                <div className="p-4 border-t border-slate-100 dark:border-[#1E382B] bg-white dark:bg-[#12231A] shrink-0 z-20 shadow-md flex-none w-full flex justify-end items-center gap-4 px-6 transition-colors">
                                     <button
                                         onClick={() => setSelectedStudent(null)}
                                         disabled={isSubmitting}
-                                        className="px-5 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+                                        className="px-5 py-3 sm:px-8 sm:py-3.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F] transition-all cursor-pointer"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         onClick={handleSave}
                                         disabled={!isFormValid || isSubmitting}
-                                        className="px-6 py-3 sm:px-10 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base bg-emerald-600 text-white font-bold hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center gap-2.5 sm:gap-3 transform active:scale-95 shadow-sm"
+                                        className="px-6 py-3 sm:px-9 sm:py-3.5 rounded-2xl text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-xl shadow-emerald-900/30 border border-emerald-400/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95"
                                     >
-                                        <Save size={18} className="sm:w-5 sm:h-5" />
-                                        {isSubmitting ? 'Menyimpan...' : 'Simpan Data'}
+                                        <Save size={18} />
+                                        <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Data'}</span>
                                     </button>
                                 </div>
                             </div>

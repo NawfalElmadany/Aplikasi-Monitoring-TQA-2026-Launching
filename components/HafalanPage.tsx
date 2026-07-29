@@ -140,7 +140,7 @@ const HafalanPage: React.FC<HafalanPageProps> = ({
     // --- Teacher Dashboard View ---
     if (isTeacher) {
         return (
-            <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full animate-in fade-in duration-500 font-sans">
+            <div className="space-y-6 flex-1 flex flex-col min-h-0 animate-in fade-in duration-500 font-sans">
                 {/* Header */}
                 <div className="sticky top-0 z-30 bg-slate-50 dark:bg-[#09120E] pt-4 pb-2 w-full flex-none no-print transition-colors duration-300">
                     <div className="bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center transition-all duration-300">
@@ -501,7 +501,7 @@ const HafalanPage: React.FC<HafalanPageProps> = ({
     }
 
     return (
-        <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full animate-in fade-in duration-500 font-sans">
+        <div className="space-y-6 flex-1 flex flex-col min-h-0 animate-in fade-in duration-500 font-sans">
             {/* Header Section */}
             <div className="sticky top-0 z-30 bg-slate-50 dark:bg-[#09120E] pt-4 pb-2 w-full flex-none no-print transition-colors duration-300">
                 <div className="bg-gradient-to-br from-white to-emerald-50/60 dark:bg-[#15231A] dark:bg-none p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-lg dark:shadow-black/30 border border-emerald-400 dark:border-white/15 flex justify-between items-center transition-all duration-300">
