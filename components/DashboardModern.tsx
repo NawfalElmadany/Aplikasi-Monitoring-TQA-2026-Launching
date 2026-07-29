@@ -158,6 +158,61 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     const targetClassId = activeClassId ? activeClassId : previousClassId;
     const isPastClass = !activeClassId && !!previousClassId;
 
+    // Dynamic teaching schedule banner text based on time and day
+    const bannerText = useMemo(() => {
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const actualDay = days[new Date().getDay()];
+        
+        // If it's Friday, Saturday, or Sunday (not a scheduled teaching day)
+        if (!['Senin', 'Selasa', 'Rabu', 'Kamis'].includes(actualDay)) {
+            return `Hari ini (${actualDay}) tidak ada jadwal mengajar resmi. Selamat beristirahat dan tetap semangat muraja'ah! :)`;
+        }
+
+        const currentMengajar = jadwalMengajar[actualDay as keyof typeof jadwalMengajar] || [];
+        if (currentMengajar.length === 0) {
+            return "Hari ini tidak ada jadwal mengajar resmi. Selamat beristirahat! :)";
+        }
+
+        const timeToMinutes = (timeStr: string): number => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // 1. If currently teaching an active class
+        if (activeClassId) {
+            const activeItem = currentMengajar.find(item => item.className.replace('Kelas ', '') === activeClassId);
+            if (activeItem) {
+                const timeOnly = activeItem.time.split(' / ')[1] || activeItem.time;
+                return `Saat ini kamu sedang jadwal mengajar di ${activeItem.className} (${timeOnly}). Semangat membimbing para santri! :)`;
+            }
+        }
+
+        // 2. If all classes for the day have finished
+        const lastClass = currentMengajar[currentMengajar.length - 1];
+        const lastClassEndMinutes = lastClass ? timeToMinutes(lastClass.end) : 0;
+        if (currentMinutes > lastClassEndMinutes) {
+            return `Alhamdulillah, seluruh jadwal mengajar hari ini (${actualDay}) telah selesai. Terima kasih atas dedikasi Anda hari ini! :)`;
+        }
+
+        // 3. If classes haven't started yet today
+        const firstClass = currentMengajar[0];
+        const firstClassStartMinutes = firstClass ? timeToMinutes(firstClass.start) : 0;
+        if (currentMinutes < firstClassStartMinutes) {
+            return `Hari ini kamu ada jadwal mengajar di ${firstClass.className} untuk jam pertama pukul ${firstClass.start}. Jangan sampai telat ya! Bawa perlengkapan mengajar. Semangat! :)`;
+        }
+
+        // 4. Upcoming classes (in transition/breaks)
+        const upcomingClass = currentMengajar.find(item => timeToMinutes(item.start) > currentMinutes);
+        if (upcomingClass) {
+            return `Setelah ini kamu ada jadwal mengajar berikutnya di ${upcomingClass.className} pukul ${upcomingClass.start}. Jangan lupa bersiap-siap ya! Semangat! :)`;
+        }
+
+        return "Hari ini kamu memiliki jadwal mengajar. Bersiaplah untuk sesi kelas berikutnya. Semangat! :)";
+    }, [activeClassId, jadwalMengajar]);
+
     const [lastMurojaah, setLastMurojaah] = useState<{ class: string; surah: string } | null>(null);
 
     // Gharib Daily Highlight State
@@ -673,8 +728,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                             </span>
                         </h1>
                         <p className="text-emerald-50 text-xs md:text-sm max-w-xl line-clamp-2">
-                            Hari ini kamu ada jadwal mengajar di jam pertama, jangan sampai telat ya!
-                            Jangan lupa bawa perlengkapan mengajar. Semangat! :)
+                            {bannerText}
                         </p>
                     </div>
                 </div>

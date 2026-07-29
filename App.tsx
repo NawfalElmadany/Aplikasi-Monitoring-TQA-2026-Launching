@@ -1664,73 +1664,69 @@ function App() {
             unreadNotesCount={unreadNotesCount}
          />
 
-         <div className="flex-1 flex flex-col h-screen overflow-hidden relative pb-16 lg:pb-0">
-            <main className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 !pt-0 scroll-smooth flex flex-col">
-               {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
-                  <Header
-                     user={user}
-                     onMenuClick={() => setIsSidebarOpen(true)}
-                     notifications={notifications}
-                     onDismissNotification={handleDismissNotification}
-                     onSearchClick={showQuickActions ? handleSearchClick : undefined}
-                     showGreeting={true}
-                  />
-               )}
-               <div key={activePage} className="animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out w-full flex-1 flex flex-col min-h-0">
-                  <Suspense fallback={<PageLoader />}>
-                     {renderContent()}
-                  </Suspense>
-               </div>
-            </main>
-
-             {/* Bottom Navigation Bar for Mobile */}
-             {user && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#121F18]/95 backdrop-blur-md border-t border-slate-100 dark:border-[#1A2E24] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] h-16 w-full flex flex-row items-center gap-6 px-6 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden pb-safe select-none">
-                   {getMobileTabs().map((tab) => {
-                      const Icon = tab.icon;
-                      const isActive = activePage === tab.id;
-                      const isLogout = tab.isLogout;
-                      
-                      return (
-                         <button
-                            key={tab.id}
-                            onClick={() => {
-                               if (isLogout) {
-                                  setShowMobileLogoutConfirm(true);
-                               } else {
-                                  if (tab.id === 'input_setoran') {
-                                     setPreSelectedStudent(null);
-                                  }
-                                  if (tab.id !== 'catatan') {
-                                     window.location.hash = '';
-                                  }
-                                  setActivePage(tab.id);
-                               }
-                            }}
-                            className={`flex flex-col items-center justify-center flex-shrink-0 min-w-[4rem] py-1.5 active:scale-95 transition-all duration-150 relative ${
-                               isActive 
-                                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold' 
-                                  : isLogout
-                                     ? 'text-red-500 hover:text-red-600 dark:text-red-400/90'
-                                     : 'text-slate-400 dark:text-[#8BA398] hover:text-slate-600 dark:hover:text-slate-200'
-                            }`}
-                         >
-                            <div className="relative">
-                               <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-200" />
-                               {tab.showBadge && unreadNotesCount > 0 && (
-                                  <span className="absolute -top-1.5 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-[#121F18] animate-pulse">
-                                     {unreadNotesCount > 99 ? '99+' : unreadNotesCount}
-                                  </span>
-                                )}
-                            </div>
-                            <span className="text-[10px] mt-1 tracking-tight leading-none">
-                               {tab.label}
-                            </span>
-                         </button>
-                      );
-                   })}
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative pb-20 lg:pb-0">
+             <main className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 !pt-0 scroll-smooth flex flex-col">
+                {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
+                   <Header
+                      user={user}
+                      onMenuClick={() => setIsSidebarOpen(true)}
+                      notifications={notifications}
+                      onDismissNotification={handleDismissNotification}
+                      onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                      showGreeting={true}
+                   />
+                )}
+                <div key={activePage} className="animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out w-full flex-1 flex flex-col min-h-0">
+                   <Suspense fallback={<PageLoader />}>
+                      {renderContent()}
+                   </Suspense>
                 </div>
-             )}
+             </main>
+ 
+              {/* Bottom Navigation Bar for Mobile */}
+              {user && (
+                 <div className="lg:hidden fixed bottom-4 left-6 right-6 z-40 bg-white dark:bg-[#121F18] border border-slate-200 dark:border-[#1E382B] shadow-[0_8px_30px_rgba(0,0,0,0.12)] h-14 rounded-full flex items-center pl-10 pr-6 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden select-none gap-x-6 transition-colors">
+                    {getMobileTabs().map((tab) => {
+                       const Icon = tab.icon;
+                       const isActive = activePage === tab.id;
+                       const isLogout = tab.isLogout;
+                       
+                       return (
+                          <button
+                             key={tab.id}
+                             onClick={() => {
+                                if (isLogout) {
+                                   setShowMobileLogoutConfirm(true);
+                                } else {
+                                   if (tab.id === 'input_setoran') {
+                                      setPreSelectedStudent(null);
+                                   }
+                                   if (tab.id !== 'catatan') {
+                                      window.location.hash = '';
+                                   }
+                                   setActivePage(tab.id);
+                                }
+                             }}
+                             className={`flex items-center gap-1.5 flex-shrink-0 pl-4 pr-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 relative select-none cursor-pointer ${
+                                isActive 
+                                   ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-[#09120E] scale-105 shadow-md shadow-emerald-600/10' 
+                                   : isLogout
+                                      ? 'text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300'
+                                      : 'text-slate-700 dark:text-[#9FB8AB] hover:text-slate-900 dark:hover:text-white'
+                             }`}
+                          >
+                             <Icon size={15} strokeWidth={isActive ? 2.5 : 2} className="transition-transform duration-200" />
+                             <span className="tracking-tight leading-none">{tab.label}</span>
+                             {tab.showBadge && unreadNotesCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-[#121F18] animate-pulse">
+                                   {unreadNotesCount > 99 ? '99+' : unreadNotesCount}
+                                </span>
+                             )}
+                          </button>
+                       );
+                    })}
+                 </div>
+              )}
 
             {/* Mobile Logout Confirmation Modal */}
             {showMobileLogoutConfirm && (
