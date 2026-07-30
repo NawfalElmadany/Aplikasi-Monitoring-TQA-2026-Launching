@@ -34,14 +34,15 @@ export const generateMonthlyReportPDF = ({
   const doc = new jsPDF('landscape');
 
   // Header with Logo
-  const logoSize = 22;
+  const logoHeight = 22;
+  const logoWidth = 22 * (1024 / 676); // Aspect ratio: 1.5147
   try {
-    doc.addImage(logoUrl, 'PNG', 14, 14, logoSize, logoSize);
+    doc.addImage(logoUrl, 'PNG', 14, 14, logoWidth, logoHeight);
   } catch {
     // Fallback if image fails to load
   }
 
-  const textX = 40;
+  const textX = 14 + logoWidth + 4;
   doc.setFontSize(16);
   doc.setTextColor(16, 185, 129); // Emerald color
   doc.setFont('helvetica', 'bold');
