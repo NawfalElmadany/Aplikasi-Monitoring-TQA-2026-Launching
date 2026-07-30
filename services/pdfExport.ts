@@ -88,36 +88,17 @@ export const generateMonthlyReportPDF = ({
 
   // Table
   const tableColumn = ["No", "Nama Siswa", "Hafalan Awal", "Hafalan Akhir", "Drill Munaqosah", "Tartili Awal", "Tartili Akhir", "Drill Tartili", "Gharib"];
-  const tableRows = reportData.map((student, index) => {
-    const teacherInfo = getAssignedTeacher(student.name, reportClass, index);
-    const badgeColorRGB = (teacherInfo.name.includes('Nawfal')
-      ? [37, 99, 235] 
-      : teacherInfo.name.includes('Ining') 
-         ? [22, 163, 74] 
-         : [217, 119, 6]) as [number, number, number];
-
-    const noCell = {
-      content: (index + 1).toString(),
-      styles: {
-        fillColor: badgeColorRGB,
-        textColor: 255,
-        fontStyle: 'bold' as const,
-        halign: 'center' as const
-      }
-    };
-
-    return [
-      noCell,
-      student.name,
-      student.hafalanStart,
-      student.hafalanEnd,
-      student.drillMunaqosah,
-      student.tartiliStart,
-      student.tartiliEnd,
-      student.drillTartili,
-      student.gharib
-    ];
-  });
+  const tableRows = reportData.map((student, index) => [
+    index + 1,
+    student.name,
+    student.hafalanStart,
+    student.hafalanEnd,
+    student.drillMunaqosah,
+    student.tartiliStart,
+    student.tartiliEnd,
+    student.drillTartili,
+    student.gharib
+  ]);
 
   autoTable(doc, {
     head: [tableColumn],
@@ -147,36 +128,6 @@ export const generateMonthlyReportPDF = ({
     }
   });
 
-  // Draw Legend on the last page below the table
-  const finalY = (doc as any).lastAutoTable?.finalY || (doc as any).previousAutoTable?.finalY || 150;
-  let legendY = finalY;
-  if (legendY > 180) {
-    doc.addPage();
-    legendY = 20;
-  } else {
-    legendY += 10;
-  }
-
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 41, 59);
-  doc.text("Keterangan Guru Pengampu (Warna Lencana Nomor):", 14, legendY + 4);
-
-  // Nawfal (Blue)
-  doc.setFillColor(37, 99, 235);
-  doc.circle(20, legendY + 10, 2.5, 'F');
-  doc.setFont('helvetica', 'normal');
-  doc.text("Ustadz Nawfal (Biru)", 25, legendY + 11);
-
-  // Ining (Green)
-  doc.setFillColor(22, 163, 74);
-  doc.circle(90, legendY + 10, 2.5, 'F');
-  doc.text("Ustadzah Ining (Hijau)", 95, legendY + 11);
-
-  // Rahma (Orange)
-  doc.setFillColor(217, 119, 6);
-  doc.circle(160, legendY + 10, 2.5, 'F');
-  doc.text("Ustadzah Rahma (Orange)", 165, legendY + 11);
 
   const fileName = reportFilterMode === 'month'
     ? `Laporan_TQA_${reportClass}_${reportMonth}.pdf`
