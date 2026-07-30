@@ -1523,10 +1523,31 @@ function App() {
                                 <tbody className="divide-y divide-gray-100">
                                    {reportData.map((student: any, idx) => {
                                       // Determine teacher color based on index
+                                      const teacherInfo = getAssignedTeacher(student.name, student.class, idx);
+                                      const badgeColor = teacherInfo.name.includes('Nawfal') 
+                                         ? '#2563eb' 
+                                         : teacherInfo.name.includes('Ining') 
+                                            ? '#16a34a' 
+                                            : '#d97706';
 
                                       return (
                                          <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                                             <td className="px-6 py-4 text-center text-gray-500 font-semibold">{idx + 1}</td>
+                                            <td className="px-6 py-4 text-center">
+                                               <div 
+                                                  className="inline-flex items-center justify-center rounded-full font-bold text-white shadow-sm mx-auto"
+                                                  style={{ 
+                                                     width: '24px', 
+                                                     height: '24px', 
+                                                     fontSize: '11px',
+                                                     lineHeight: '24px',
+                                                     backgroundColor: badgeColor,
+                                                     printColorAdjust: 'exact',
+                                                     WebkitPrintColorAdjust: 'exact'
+                                                  }}
+                                               >
+                                                  {idx + 1}
+                                               </div>
+                                            </td>
                                             <td className="px-6 py-4 font-medium text-gray-900">{student.name}</td>
                                             <td className="px-6 py-4 text-center text-gray-600">{student.hafalanStart}</td>
                                             <td className="px-6 py-4 text-center font-bold text-emerald-600 dark:text-emerald-400">{student.hafalanEnd}</td>
@@ -1554,6 +1575,49 @@ function App() {
                          )}
                       </div>
 
+                      {/* Legend Info */}
+                      <div className="mt-6 flex flex-wrap gap-6 items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 no-print">
+                         <div className="flex items-center gap-2">
+                            <div 
+                               className="rounded-full shadow-sm"
+                               style={{ 
+                                  width: '20px', 
+                                  height: '20px', 
+                                  backgroundColor: '#2563eb',
+                                  printColorAdjust: 'exact',
+                                  WebkitPrintColorAdjust: 'exact'
+                               }}
+                            ></div>
+                            <span className="text-sm font-medium text-gray-700">Warna 1: Ustadz Nawfal</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <div 
+                               className="rounded-full shadow-sm"
+                               style={{ 
+                                  width: '20px', 
+                                  height: '20px', 
+                                  backgroundColor: '#16a34a',
+                                  printColorAdjust: 'exact',
+                                  WebkitPrintColorAdjust: 'exact'
+                               }}
+                            ></div>
+                            <span className="text-sm font-medium text-gray-700">Warna 2: Ustadzah Ining</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <div 
+                               className="rounded-full shadow-sm"
+                               style={{ 
+                                  width: '20px', 
+                                  height: '20px', 
+                                  backgroundColor: '#d97706',
+                                  printColorAdjust: 'exact',
+                                  WebkitPrintColorAdjust: 'exact'
+                               }}
+                            ></div>
+                            <span className="text-sm font-medium text-gray-700">Warna 3: Ustadzah Rahma</span>
+                         </div>
+                      </div>
+                   </div>
                 </div>
             );
 
