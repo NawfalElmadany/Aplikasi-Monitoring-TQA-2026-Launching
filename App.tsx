@@ -140,7 +140,7 @@ function App() {
    const [students, setStudents] = useState<Student[]>(() => {
       const local = localStorage.getItem('tqa_students');
       const isResetFlag = localStorage.getItem('tqa_is_reset') === 'true';
-      const raw = local ? JSON.parse(local) : (isResetFlag ? cleanStudents : INITIAL_STUDENTS);
+      const raw: Student[] = local ? JSON.parse(local) : (isResetFlag ? cleanStudents : INITIAL_STUDENTS);
       return raw.map(s => {
          if (!s.avatar || s.avatar.includes('api.dicebear.com')) {
             return { ...s, avatar: getAvatarUrl(s.name) };

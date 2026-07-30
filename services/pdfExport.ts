@@ -90,18 +90,18 @@ export const generateMonthlyReportPDF = ({
   const tableColumn = ["No", "Nama Siswa", "Hafalan Awal", "Hafalan Akhir", "Drill Munaqosah", "Tartili Awal", "Tartili Akhir", "Drill Tartili", "Gharib"];
   const tableRows = reportData.map((student, index) => {
     const teacherInfo = getAssignedTeacher(student.name, reportClass, index);
-    const badgeColorRGB = teacherInfo.name.includes('Nawfal') 
+    const badgeColorRGB = (teacherInfo.name.includes('Nawfal')
       ? [37, 99, 235] 
       : teacherInfo.name.includes('Ining') 
          ? [22, 163, 74] 
-         : [217, 119, 6];
+         : [217, 119, 6]) as [number, number, number];
 
     const noCell = {
       content: (index + 1).toString(),
       styles: {
         fillColor: badgeColorRGB,
         textColor: 255,
-        fontStyle: 'bold',
+        fontStyle: 'bold' as const,
         halign: 'center' as const
       }
     };
