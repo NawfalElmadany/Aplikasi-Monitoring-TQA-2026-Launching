@@ -107,6 +107,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                         setLogs(remoteLogs);
                         setActiveClass(selectedClass);
                         setActiveDate(selectedDate);
+                        setActiveTeacher(selectedTeacher);
                     }
                 } else {
                     const currentLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
@@ -114,6 +115,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                         setLogs(currentLogs);
                         setActiveClass(selectedClass);
                         setActiveDate(selectedDate);
+                        setActiveTeacher(selectedTeacher);
                     }
                 }
             } catch (e) {
@@ -123,6 +125,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                     setLogs(currentLogs);
                     setActiveClass(selectedClass);
                     setActiveDate(selectedDate);
+                    setActiveTeacher(selectedTeacher);
                 }
             } finally {
                 if (isMounted) {
@@ -136,7 +139,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
             isMounted = false;
             clearTimeout(timer);
         };
-    }, [selectedDate, selectedClass, isInitialLoading]);
+    }, [selectedDate, selectedClass, selectedTeacher, isInitialLoading]);
 
     // Live update listener when tab or window focuses
     useEffect(() => {
