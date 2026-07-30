@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Users, CheckCircle, AlertCircle, PlusCircle, Filter } from 'lucide-react';
+import { Calendar, Users, CheckCircle, AlertCircle, PlusCircle, Filter, ChevronDown } from 'lucide-react';
 import { Student, User } from '../types';
-import { loadSetoranLogs } from '../services/appData';
+import { loadSetoranLogs, getAssignedTeacher } from '../services/appData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import Header from './Header';
 
@@ -25,6 +25,8 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     onSearchClick
 }) => {
     const [selectedClass, setSelectedClass] = useState<string>('Semua');
+    const [selectedTeacher, setSelectedTeacher] = useState<string>('Semua');
+    const [activeTeacher, setActiveTeacher] = useState<string>('Semua');
     const [selectedDate, setSelectedDate] = useState(() => {
         const d = new Date();
         const offset = d.getTimezoneOffset();
@@ -57,6 +59,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                         setLogs(remoteLogs);
                         setActiveClass(selectedClass);
                         setActiveDate(selectedDate);
+                        setActiveTeacher(selectedTeacher);
                     }
                 } else {
                     const currentLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
@@ -64,6 +67,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                         setLogs(currentLogs);
                         setActiveClass(selectedClass);
                         setActiveDate(selectedDate);
+                    setActiveTeacher(selectedTeacher);
                     }
                 }
             } catch (e) {
@@ -73,6 +77,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                     setLogs(currentLogs);
                     setActiveClass(selectedClass);
                     setActiveDate(selectedDate);
+                    setActiveTeacher(selectedTeacher);
                 }
             } finally {
                 if (isMounted) {
@@ -184,7 +189,18 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     const classes = ['Semua', '5B', '5C', '5D', '6C', '6D'];
 
     const { sudahSetor, belumSetor } = useMemo(() => {
-        const studentsInClass = students.filter(s => activeClass === 'Semua' || s.class === activeClass);
+        let studentsInClass = students.filter(s => activeClass === 'Semua' || s.class === activeClass);
+        if (activeTeacher !== 'Semua') {
+            studentsInClass = studentsInClass.filter(s => {
+                const classStudents = students
+                    .filter(cs => cs.class === s.class)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                const idx = classStudents.findIndex(cs => cs.id === s.id);
+                if (idx === -1) return false;
+                const teacherInfo = getAssignedTeacher(s.name, s.class, idx);
+                return teacherInfo.name === activeTeacher;
+            });
+        }
         
         // Match only the date part in the client's local timezone (YYYY-MM-DD)
         const dayLogs = logs.filter((log: any) => {
@@ -215,7 +231,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
         });
 
         return { sudahSetor: sudah, belumSetor: belum };
-    }, [students, activeClass, activeDate, logs]);
+    }, [students, activeClass, activeDate, activeTeacher, logs]);
 
     const renderSkeleton = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -286,6 +302,24 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                         <p className="text-slate-500 text-xs mt-0.5">Tentukan tanggal untuk dipantau</p>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+                        {/* Teacher Selector */}
+                        <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block ml-1">Pilih Pengampu</label>
+                            <div className="relative min-w-[180px]">
+                                <select
+                                    value={selectedTeacher}
+                                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                                    className="w-full pl-4 pr-10 py-2.5 rounded-2xl border border-slate-200 font-bold text-slate-700 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm h-[48px] shadow-sm transition-all appearance-none"
+                                >
+                                    <option value="Semua">Semua Pengampu</option>
+                                    <option value="Ustadz Nawfal">Ustadz Nawfal</option>
+                                    <option value="Ustadzah Ining">Ustadzah Ining</option>
+                                    <option value="Ustadzah Rahma">Ustadzah Rahma</option>
+                                </select>
+                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+
                         {/* Date Picker */}
                         <div className="flex flex-col gap-1.5 w-full sm:w-auto">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block ml-1">Pilih Tanggal</label>
