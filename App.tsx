@@ -1,3 +1,4 @@
+import { getAvatarUrl } from './utils/avatar';
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import logoUrl from './assets/logo.png';
 import { BookOpen, FileText, Calendar, ChevronDown, AlertCircle, Activity, Plus, Download, CheckCircle2, LayoutDashboard, Users, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, Menu, LogOut, MessageSquare } from 'lucide-react';
@@ -37,7 +38,7 @@ const GharibPage = lazy(() => import('./components/GharibPage'));
 import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead, getAssignedTeacher } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
 import { useToast } from './context/ToastContext';
 
@@ -61,6 +62,18 @@ function App() {
    const [activePage, setActivePage] = useState('dashboard');
    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
    const [showMobileLogoutConfirm, setShowMobileLogoutConfirm] = useState(false);
+   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
+   const [profileReferrer, setProfileReferrer] = useState('santri');
+   const [globalToastShow, setGlobalToastShow] = useState(false);
+   const [globalToastMsg, setGlobalToastMsg] = useState('');
+
+   const triggerGlobalToast = (msg: string) => {
+      setGlobalToastMsg(msg);
+      setGlobalToastShow(true);
+      setTimeout(() => {
+         setGlobalToastShow(false);
+      }, 3000);
+   };
 
    const isSidebarOpen = isSidebarOpenState;
    const setIsSidebarOpen = (open: boolean | ((prev: boolean) => boolean)) => {
@@ -127,7 +140,13 @@ function App() {
    const [students, setStudents] = useState<Student[]>(() => {
       const local = localStorage.getItem('tqa_students');
       const isResetFlag = localStorage.getItem('tqa_is_reset') === 'true';
-      return local ? JSON.parse(local) : (isResetFlag ? cleanStudents : INITIAL_STUDENTS);
+      const raw = local ? JSON.parse(local) : (isResetFlag ? cleanStudents : INITIAL_STUDENTS);
+      return raw.map(s => {
+         if (!s.avatar || s.avatar.includes('api.dicebear.com')) {
+            return { ...s, avatar: getAvatarUrl(s.name) };
+         }
+         return s;
+      });
    });
 
    useEffect(() => {
@@ -149,9 +168,6 @@ function App() {
    }, [murojaahEntries]);
 
    // Modal State
-   // const [selectedStudent, setSelectedStudent] = useState<Student | null>(null); // Moved to local state in SetoranPage
-   // const [isInputModalOpen, setIsInputModalOpen] = useState(false); // Deprecated
-
    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
    const [isScoreDetailModalOpen, setIsScoreDetailModalOpen] = useState(false);
    const [isUnsubmittedModalOpen, setIsUnsubmittedModalOpen] = useState(false);
@@ -161,6 +177,33 @@ function App() {
    const [historyStudent, setHistoryStudent] = useState<Student | null>(null);
    const [preSelectedStudent, setPreSelectedStudent] = useState<Student | null>(null);
    const [profileStudent, setProfileStudent] = useState<Student | null>(null);
+
+   const checkForUpdates = async (manual = false) => {
+      try {
+         const response = await fetch('/version.json?t=' + Date.now());
+         if (!response.ok) {
+            if (manual) triggerGlobalToast('Gagal terhubung ke server.');
+            return;
+         }
+         const data = await response.json();
+         const currentVersion = '1.0.0'; 
+         if (data.version !== currentVersion) {
+            setIsUpdateAvailable(true);
+            if (manual) triggerGlobalToast('Pembaruan aplikasi tersedia!');
+         } else {
+            if (manual) triggerGlobalToast('Aplikasi dalam versi terbaru.');
+         }
+      } catch (e) {
+         console.warn('Update check skipped', e);
+         if (manual) triggerGlobalToast('Gagal memeriksa pembaruan.');
+      }
+   };
+
+   useEffect(() => {
+      checkForUpdates();
+      const interval = setInterval(() => checkForUpdates(), 600000);
+      return () => clearInterval(interval);
+   }, []);
 
    // Report State
    const [reportClass, setReportClass] = useState('5C');
@@ -309,9 +352,6 @@ function App() {
       setUser(null);
       setActivePage('dashboard');
    };
-
-   const [globalToastShow, setGlobalToastShow] = useState(false);
-   const [globalToastMsg, setGlobalToastMsg] = useState('');
 
    const handleSaveNilai = async (id: string, data: Partial<Student> & { date?: string }) => {
       const existingStudent = students.find((student) => student.id === id);
@@ -558,9 +598,15 @@ function App() {
             const nextMurojaahEntries = remoteMurojaahEntries.length > 0 
                ? remoteMurojaahEntries 
                : (isResetFlag ? [] : INITIAL_MUROJAAH_ENTRIES);
-            const nextStudents = remoteStudents.length > 0 
+            const rawNextStudents = remoteStudents.length > 0 
                ? remoteStudents 
                : (isResetFlag ? cleanStudents : INITIAL_STUDENTS);
+            const nextStudents = rawNextStudents.map(s => {
+               if (!s.avatar || s.avatar.includes('api.dicebear.com')) {
+                  return { ...s, avatar: getAvatarUrl(s.name) };
+               }
+               return s;
+            });
             const nextSettings = remoteSettings ?? {
                academicYear: DEFAULT_ACADEMIC_YEAR,
                targets: DEFAULT_TARGETS,
@@ -926,6 +972,11 @@ function App() {
                   notifications={notifications}
                   onDismissNotification={handleDismissNotification}
                   onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                  onViewProfile={(student) => {
+                     setProfileStudent(student);
+                     setProfileReferrer('input_setoran');
+                     setActivePage('profil_siswa');
+                  }}
                />
             );
          case 'santri':
@@ -938,6 +989,7 @@ function App() {
                   }}
                   onViewHistory={(student) => {
                      setProfileStudent(student);
+                      setProfileReferrer('santri');
                      setActivePage('profil_siswa');
                   }}
                   user={user}
@@ -1027,7 +1079,7 @@ function App() {
                     notifications={notifications}
                     onDismissNotification={handleDismissNotification}
                     onSearchClick={showQuickActions ? handleSearchClick : undefined}
-                    onBack={() => setActivePage('santri')}
+                    onBack={() => setActivePage(profileReferrer)}
                     onInputSetoran={(student) => {
                        setPreSelectedStudent(student);
                        setActivePage('input_setoran');
@@ -1188,83 +1240,68 @@ function App() {
                   return text.replace(/Drill Munaqosah\s+/gi, "").replace(/Drill Tartili\s+/gi, "");
                };
 
-               // 1. Hafalan Logs Calculation
-               const hafalanLogs = studentLogs.filter((log: any) => log.type === 'Hafalan');
-               const hafalanLanjutLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
+                // 1. Hafalan Logs Calculation
+                const hafalanLogs = studentLogs.filter((log: any) => log.type === 'Hafalan');
+                const hafalanLanjutLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
 
-               if (hafalanLanjutLogs.length > 0) {
-                  hafalanStartDisplay = cleanDrillText(hafalanLanjutLogs[0].currentSurah);
-                  hafalanEndDisplay = cleanDrillText(hafalanLanjutLogs[hafalanLanjutLogs.length - 1].currentSurah);
-               } else {
-                  // Fallback to database current state (cleaned)
-                  let hafalanEndFull = cleanDrillText(student.currentSurah);
-                  
-                  if (!hafalanEndFull.includes(':')) {
-                     // Mock fallback range based on seed if it's a simple name
-                     const endVerse = 10 + (seed % 15);
-                     hafalanEndFull = `${hafalanEndFull}: 1-${endVerse}`;
-                  }
+                if (hafalanLanjutLogs.length > 0) {
+                   hafalanStartDisplay = cleanDrillText(hafalanLanjutLogs[0].currentSurah);
+                   hafalanEndDisplay = cleanDrillText(hafalanLanjutLogs[hafalanLanjutLogs.length - 1].currentSurah);
+                } else {
+                   hafalanStartDisplay = "-";
+                   hafalanEndDisplay = "-";
+                }
 
-                  const currentSurahName = hafalanEndFull.split(':')[0].trim();
-                  let currentIdx = surahs30.indexOf(currentSurahName);
-                  if (currentIdx === -1) currentIdx = 5; // Fallback
+                // Helper to resolve raw Juz text to a specific realistic Surah name in that Juz
+                const resolveSurahName = (rawName: string, studentSeed: number) => {
+                   const cleanName = rawName.trim();
+                   if (cleanName.startsWith("Juz")) {
+                      const match = cleanName.match(/Juz\s+(\d+)/i);
+                      if (match) {
+                         const juzNum = parseInt(match[1]);
+                         if (juzNum === 30) return surahs30[studentSeed % surahs30.length];
+                         if (juzNum === 29) return surahs29[studentSeed % surahs29.length];
+                         if (juzNum === 28) return surahs28[studentSeed % surahs28.length];
+                      }
+                      return "An-Naba";
+                   }
+                   return cleanName;
+                };
 
-                  let hafalanStart = "";
-                  if (seed % 2 === 0 && currentIdx > 0) {
-                     const prevSurah = surahs30[currentIdx - 1];
-                     hafalanStart = `${prevSurah}: 15-End`;
-                  } else {
-                     hafalanStart = `${currentSurahName}: 1-5`;
-                  }
-                  
-                  hafalanStartDisplay = cleanDrillText(hafalanStart);
-                  hafalanEndDisplay = cleanDrillText(hafalanEndFull);
-               }
+                // Format Hafalan displays to start and end verses with " : " separator, resolving Juz to Surah names
+                if (hafalanStartDisplay && hafalanStartDisplay !== "-") {
+                   if (hafalanStartDisplay.includes(':')) {
+                      const [name, range] = hafalanStartDisplay.split(':');
+                      let verse = range.trim();
+                      if (range.includes('-')) {
+                         verse = range.split('-')[0].trim();
+                      }
+                      const resolvedName = resolveSurahName(name, seed);
+                      hafalanStartDisplay = `${resolvedName} : ${verse}`;
+                   } else {
+                      const resolvedName = resolveSurahName(hafalanStartDisplay, seed);
+                      hafalanStartDisplay = resolvedName;
+                   }
+                } else {
+                   hafalanStartDisplay = "-";
+                }
 
-               // Helper to resolve raw Juz text to a specific realistic Surah name in that Juz
-               const resolveSurahName = (rawName: string, studentSeed: number) => {
-                  const cleanName = rawName.trim();
-                  if (cleanName.startsWith("Juz")) {
-                     const match = cleanName.match(/Juz\s+(\d+)/i);
-                     if (match) {
-                        const juzNum = parseInt(match[1]);
-                        if (juzNum === 30) return surahs30[studentSeed % surahs30.length];
-                        if (juzNum === 29) return surahs29[studentSeed % surahs29.length];
-                        if (juzNum === 28) return surahs28[studentSeed % surahs28.length];
-                     }
-                     return "An-Naba"; // default fallback surah
-                  }
-                  return cleanName;
-               };
-
-               // Format Hafalan displays to start and end verses with " : " separator, resolving Juz to Surah names
-               if (hafalanStartDisplay.includes(':')) {
-                  const [name, range] = hafalanStartDisplay.split(':');
-                  let verse = range.trim();
-                  if (range.includes('-')) {
-                     verse = range.split('-')[0].trim();
-                  }
-                  const resolvedName = resolveSurahName(name, seed);
-                  hafalanStartDisplay = `${resolvedName} : ${verse}`;
-               } else {
-                  const resolvedName = resolveSurahName(hafalanStartDisplay, seed);
-                  const verseNum = 1 + (seed % 10);
-                  hafalanStartDisplay = `${resolvedName} : ${verseNum}`;
-               }
-
-               if (hafalanEndDisplay.includes(':')) {
-                  const [name, range] = hafalanEndDisplay.split(':');
-                  let verse = range.trim();
-                  if (range.includes('-')) {
-                     verse = range.split('-')[1].trim();
-                  }
-                  const resolvedName = resolveSurahName(name, seed);
-                  hafalanEndDisplay = `${resolvedName} : ${verse}`;
-               } else {
-                  const resolvedName = resolveSurahName(hafalanEndDisplay, seed);
-                  const verseNum = 10 + (seed % 15);
-                  hafalanEndDisplay = `${resolvedName} : ${verseNum}`;
-               }
+                if (hafalanEndDisplay && hafalanEndDisplay !== "-") {
+                   if (hafalanEndDisplay.includes(':')) {
+                      const [name, range] = hafalanEndDisplay.split(':');
+                      let verse = range.trim();
+                      if (range.includes('-')) {
+                         verse = range.split('-')[1].trim();
+                      }
+                      const resolvedName = resolveSurahName(name, seed);
+                      hafalanEndDisplay = `${resolvedName} : ${verse}`;
+                   } else {
+                      const resolvedName = resolveSurahName(hafalanEndDisplay, seed);
+                      hafalanEndDisplay = resolvedName;
+                   }
+                } else {
+                   hafalanEndDisplay = "-";
+                }
 
                // Calculate Drill Munaqosah (last Drill log for Hafalan in this period)
                let drillMunaqosah = "-";
@@ -1275,28 +1312,25 @@ function App() {
                   drillMunaqosah = `Drill Juz ${drillJuz}`;
                }
 
-               // 2. Tartili Logs Calculation
-               const tartiliLogs = studentLogs.filter((log: any) => log.type === 'Tartili' && (!log.currentSurah || !log.currentSurah.includes('Gharib')));
-               const tartiliLanjutLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
+                // 2. Tartili Logs Calculation
+                const tartiliLogs = studentLogs.filter((log: any) => log.type === 'Tartili' && (!log.currentSurah || !log.currentSurah.includes('Gharib')));
+                const tartiliLanjutLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
 
-               if (tartiliLanjutLogs.length > 0) {
-                  const firstLog = tartiliLanjutLogs[0];
-                  const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
-                  
-                  const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
-                  const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
-                  const firstPage = firstLog.page || "1";
-                  const lastPage = lastLog.page || "1";
-                  
-                  tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
-                  tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
-               } else {
-                  // Fallback to database current state (cleaned)
-                  const currentPage = cleanDrillText(student.page || '10');
-                  const startPage = Math.max(1, parseInt(currentPage) - 5 || 1);
-                  tartiliStart = `Jilid ${student.iqraLevel || 1} Hal. ${startPage}`;
-                  tartiliEnd = `Jilid ${student.iqraLevel || 1} Hal. ${currentPage}`;
-               }
+                if (tartiliLanjutLogs.length > 0) {
+                   const firstLog = tartiliLanjutLogs[0];
+                   const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
+                   
+                   const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
+                   const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
+                   const firstPage = firstLog.page || "1";
+                   const lastPage = lastLog.page || "1";
+                   
+                   tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
+                   tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
+                } else {
+                   tartiliStart = "-";
+                   tartiliEnd = "-";
+                }
 
                // Calculate Drill Tartili (last Drill log for Tartili in this period)
                let drillTartili = "-";
@@ -1489,8 +1523,12 @@ function App() {
                                 <tbody className="divide-y divide-gray-100">
                                    {reportData.map((student: any, idx) => {
                                       // Determine teacher color based on index
-                                      const teacherIndex = idx % 3;
-                                      const badgeColor = teacherIndex === 0 ? '#2563eb' : teacherIndex === 1 ? '#16a34a' : '#d97706';
+                                      const teacherInfo = getAssignedTeacher(student.name, student.class, idx);
+                                      const badgeColor = teacherInfo.name.includes('Nawfal') 
+                                         ? '#2563eb' 
+                                         : teacherInfo.name.includes('Ining') 
+                                            ? '#16a34a' 
+                                            : '#d97706';
 
                                       return (
                                          <tr key={student.id} className="hover:bg-gray-50 transition-colors">
@@ -1601,6 +1639,7 @@ function App() {
                   notifications={notifications}
                   onDismissNotification={handleDismissNotification}
                   onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                  onCheckForUpdates={() => checkForUpdates(true)}
                />
              );
          default:
@@ -1815,6 +1854,27 @@ function App() {
               <CheckCircle2 size={20} className="text-white shrink-0" />
               <span className="text-sm font-bold">{globalToastMsg}</span>
           </div>
+
+           {/* Notifikasi Pembaruan Aplikasi */}
+           {isUpdateAvailable && (
+              <div className="fixed bottom-6 left-6 right-6 sm:left-auto sm:max-w-md z-[110] animate-in slide-in-from-bottom-6 fade-in duration-300 font-sans pointer-events-auto">
+                 <div className="bg-gradient-to-r from-emerald-950/95 to-slate-900/95 dark:from-[#07130E]/95 dark:to-[#0D1C15]/95 border border-emerald-500/40 p-4 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-md flex flex-col sm:flex-row items-center gap-4 text-white">
+                    <div className="w-10 h-10 bg-emerald-500/20 border border-emerald-400/30 rounded-full flex items-center justify-center text-emerald-400 shrink-0 animate-bounce">
+                       <RotateCw size={20} />
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                       <h4 className="text-sm font-black text-emerald-400 uppercase tracking-wide">Pembaruan Tersedia</h4>
+                       <p className="text-xs text-slate-300 mt-0.5 leading-relaxed font-semibold">Versi terbaru aplikasi telah dirilis. Silakan muat ulang halaman untuk memperbarui.</p>
+                    </div>
+                    <button
+                       onClick={() => window.location.reload()}
+                       className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer hover:shadow-emerald-500/10"
+                    >
+                       Perbarui Sekarang
+                    </button>
+                 </div>
+              </div>
+           )}
        </div>
     );
 }

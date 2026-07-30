@@ -242,13 +242,15 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
     };
 
     const handleAddTarget = async () => {
-        if (!startSurah || !endSurah || !selectedClass) return;
+        if (!startSurah || !selectedClass) return;
 
         try {
             setIsSaving(true);
             playSuccessSound();
 
-            const newMaterial = `${startSurah} s.d. ${endSurah}`;
+            const newMaterial = (!endSurah || startSurah === endSurah)
+                ? startSurah
+                : `${startSurah} s.d. ${endSurah}`;
             const newRow = {
                 date: formatIndonesianDate(murojaahDate),
                 class: selectedClass,
@@ -338,11 +340,40 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
                                         <Users size={20} className="text-indigo-600 dark:text-indigo-400" />
-                                        Target Murojaah Bersama (Klasikal) - Kelas {viewingClass}
+                                        Target Murojaah Bersama (Klasikal)
                                     </h3>
                                     <button onClick={() => setShowInput(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                                         <X size={20} />
                                     </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Pilih Kelas</label>
+                                        <div className="relative">
+                                            <select
+                                                value={selectedClass}
+                                                onChange={(e) => setSelectedClass(e.target.value)}
+                                                className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none appearance-none bg-white dark:bg-dark-card font-medium text-gray-700"
+                                            >
+                                                <option value="">Pilih Kelas</option>
+                                                <option value="5B">5B</option>
+                                                <option value="5C">5C</option>
+                                                <option value="5D">5D</option>
+                                                <option value="6C">6C</option>
+                                                <option value="6D">6D</option>
+                                            </select>
+                                            <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 rotate-90" size={16} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Tanggal</label>
+                                        <input
+                                            type="date"
+                                            value={murojaahDate}
+                                            onChange={(e) => setMurojaahDate(e.target.value)}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-dark-border focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none bg-white dark:bg-dark-card font-medium text-gray-700"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -388,15 +419,17 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                 <div className="flex justify-end">
                                     <button
                                         onClick={async () => {
-                                            if (!startSurah || !endSurah) return;
+                                            if (!selectedClass || !startSurah) return;
                                             try {
                                                 setIsSaving(true);
                                                 playSuccessSound();
-                                                const newMaterial = `${startSurah} s.d. ${endSurah}`;
+                                                const newMaterial = (!endSurah || startSurah === endSurah)
+                                                    ? startSurah
+                                                    : `${startSurah} s.d. ${endSurah}`;
                                                 
                                                 const newRow = {
-                                                    date: formatIndonesianDate(getTodayDateString()),
-                                                    class: viewingClass,
+                                                    date: formatIndonesianDate(murojaahDate),
+                                                    class: selectedClass,
                                                     material: `Surah ${newMaterial}`
                                                 };
                                                 setJurnalData([newRow, ...jurnalData]);
@@ -405,9 +438,9 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                                     juz: 30,
                                                     surah: newMaterial,
                                                     status: 'upcoming',
-                                                    date: 'Hari Ini',
+                                                    date: murojaahDate,
                                                     type: 'classical',
-                                                    className: viewingClass
+                                                    className: selectedClass
                                                 });
 
                                                 setShowInput(false);

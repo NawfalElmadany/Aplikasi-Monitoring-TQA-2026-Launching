@@ -1,3 +1,4 @@
+import { getAvatarUrl } from './utils/avatar';
 import { AcademicYear, MenuItem, MurojaahEntry, Note, Student, Target, Teacher } from './types';
 import { LayoutDashboard, Users, BookOpen, FileText, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon } from 'lucide-react';
 
@@ -12,7 +13,6 @@ const RAW_STUDENTS = [
   { name: "ARINTA INARA ATALYSSA", class: "5B" },
   { name: "AULIAN AFZAL ARFIANTO", class: "5B" },
   { name: "AZRIEL AL AZZAM RANGGAWUNI", class: "5B" },
-  { name: "CHAYRA HANANIA FIRMANSYAH", class: "5B" },
   { name: "FATIH ZAIDAN AL AZZAM", class: "5B" },
   { name: "FIGO ALIV EL GIBRAN", class: "5B" },
   { name: "GYTHA INARA TIFFANI", class: "5B" },
@@ -100,7 +100,6 @@ const RAW_STUDENTS = [
   { name: "Adelina Diandra Wijaya", class: "6C" },
   { name: "Ahnaf Haidar Fahmi", class: "6C" },
   { name: "Akma Shakila Khairina", class: "6C" },
-  { name: "Ali Aunnilla Bahadj", class: "6C" },
   { name: "Alvaro Calya Ziggy Faustan", class: "6C" },
   { name: "Amalia Putri Anjani", class: "6C" },
   { name: "Amaranggana Kinnara Prasetyo", class: "6C" },
@@ -202,7 +201,7 @@ export const INITIAL_STUDENTS: Student[] = RAW_STUDENTS.map((s, idx) => {
   else status = 'Perlu Bimbingan';
 
   // DiceBear Avatars for better visual
-  const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s.name.replace(/ /g, '')}&backgroundColor=c0aede,b6e3f4,ffdfbf`;
+  const avatar = getAvatarUrl(s.name);
 
   return {
     id: (idx + 1).toString(),

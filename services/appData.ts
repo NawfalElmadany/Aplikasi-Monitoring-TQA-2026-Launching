@@ -728,7 +728,7 @@ export const getAssignedTeacher = (name: string, studentClass: string, studentIn
       "GYTHA INARA TIFFANI",
       "KANAYA ADIFIA SHEZAN",
       "MUHAMMAD RADJENDRA",
-      "AFREEN NANDA EL FITA SETIAWAN",
+      "AFREEN NANDA ELFIRA SETIAWAN",
       "ANINDITA KEYSA AZZAHRA",
       "AMIRA SHAKINA AZALEA",
       "NABILA SHALIHA AZZAHRA",

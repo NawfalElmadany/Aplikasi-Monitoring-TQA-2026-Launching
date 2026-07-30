@@ -14,6 +14,7 @@ interface SetoranPageProps {
     notifications?: Student[];
     onDismissNotification?: (studentId: string) => void;
     onSearchClick?: () => void;
+    onViewProfile?: (student: Student) => void;
 }
 
 // Data Surah Mapping (Reused from NewSetoranModal)
@@ -55,7 +56,8 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
     onMenuClick,
     notifications = [],
     onDismissNotification,
-    onSearchClick
+    onSearchClick,
+    onViewProfile
 }) => {
     const defaultTeacher = useMemo(() => {
         if (user && user.role === 'teacher') {
@@ -459,30 +461,54 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-hide pb-24 pr-1">
                             {filteredStudents.map(student => (
-                                <button
+                                <div
                                     key={student.id}
-                                    onClick={() => setSelectedStudent(student)}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left cursor-pointer
+                                    className={`w-full flex items-center justify-between p-1.5 rounded-xl border transition-all text-left
                                         ${selectedStudent?.id === student.id
-                                            ? 'bg-emerald-50 dark:bg-[#152B20] border border-emerald-300 dark:border-emerald-700/60 ring-1 ring-emerald-400/40 shadow-sm'
-                                            : 'hover:bg-slate-50 dark:hover:bg-[#16291F] border border-transparent'}`}
+                                            ? 'bg-emerald-50/70 dark:bg-[#152B20]/70 border-emerald-300 dark:border-emerald-700/60 ring-1 ring-emerald-400/40 shadow-sm'
+                                            : 'hover:bg-slate-50/50 dark:hover:bg-[#16291F]/50 border-transparent'}`}
                                 >
-                                    <img
-                                        src={student.avatar}
-                                        alt={student.name}
-                                        className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-[#1E382B] bg-slate-100 dark:bg-[#0C1A13]"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`font-bold text-sm truncate ${selectedStudent?.id === student.id ? 'text-emerald-950 dark:text-emerald-300 font-extrabold' : 'text-slate-800 dark:text-white'}`}>
-                                            {student.name}
-                                        </p>
-                                        <p className="text-xs text-slate-500 dark:text-[#8BA398] truncate flex items-center gap-1 mt-0.5">
-                                            <BookOpen size={11} className="text-emerald-600 dark:text-emerald-400" />
-                                            {student.currentSurah || 'Belum ada setoran'}
-                                        </p>
+                                    <button
+                                        onClick={() => setSelectedStudent(student)}
+                                        className="flex-1 flex items-center gap-3 p-1.5 cursor-pointer outline-none min-w-0 text-left"
+                                    >
+                                        <img
+                                            src={student.avatar}
+                                            alt={student.name}
+                                            className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-[#1E382B] bg-slate-100 dark:bg-[#0C1A13]"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`font-bold text-sm truncate ${selectedStudent?.id === student.id ? 'text-emerald-950 dark:text-emerald-300 font-extrabold' : 'text-slate-800 dark:text-white'}`}>
+                                                {student.name}
+                                            </p>
+                                            <p className="text-xs text-slate-500 dark:text-[#8BA398] truncate flex items-center gap-1 mt-0.5 font-semibold">
+                                                <BookOpen size={11} className="text-emerald-600 dark:text-emerald-400" />
+                                                {student.currentSurah || 'Belum ada setoran'}
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    <div className="flex items-center gap-1 shrink-0 pr-1.5">
+                                        {onViewProfile && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onViewProfile(student);
+                                                }}
+                                                className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-[#1C3026] rounded-xl transition-all cursor-pointer"
+                                                title="Lihat Detail Informasi Siswa"
+                                            >
+                                                <User size={16} />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => setSelectedStudent(student)}
+                                            className="p-2 cursor-pointer outline-none"
+                                        >
+                                            <ChevronRight size={16} className={`transition-colors ${selectedStudent?.id === student.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-[#6B8578]'}`} />
+                                        </button>
                                     </div>
-                                    <ChevronRight size={16} className={`transition-colors ${selectedStudent?.id === student.id ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-[#6B8578]'}`} />
-                                </button>
+                                </div>
                             ))}
                         </div>
                     </div>

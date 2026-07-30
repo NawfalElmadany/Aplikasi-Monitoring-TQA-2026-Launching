@@ -1,3 +1,4 @@
+import { getAvatarUrl } from '../utils/avatar';
 import React, { useState, useRef, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import { User as UserIcon, Upload, CheckCircle2, Loader2, AlertCircle, Shield, Award, GraduationCap } from 'lucide-react';
@@ -90,7 +91,7 @@ const ProfilSiswaPage: React.FC<ProfilSiswaPageProps> = ({
     const studentName = currentStudent?.name || user.name;
     const studentClass = currentStudent?.class || '5B';
     const nis = `2600${studentId.padStart(3, '0')}`;
-    const avatarUrl = currentStudent?.avatar || user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=student';
+    const avatarUrl = currentStudent?.avatar || user.avatar || getAvatarUrl(studentName);
 
     const handleUploadClick = () => {
         if (user.role !== 'teacher') return;

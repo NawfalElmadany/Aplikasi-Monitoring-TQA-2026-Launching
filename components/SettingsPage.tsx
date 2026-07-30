@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle } from 'lucide-react';
+import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle, RotateCw } from 'lucide-react';
 import { User, AcademicYear, Target, Teacher } from '../types';
 import TeacherModal from './TeacherModal';
 import Header from './Header';
@@ -63,6 +63,7 @@ interface SettingsPageProps {
     notifications?: Student[];
     onDismissNotification?: (studentId: string) => void;
     onSearchClick?: () => void;
+    onCheckForUpdates?: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -80,7 +81,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     onMenuClick,
     notifications = [],
     onDismissNotification,
-    onSearchClick
+    onSearchClick,
+    onCheckForUpdates
 }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -691,9 +693,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                     {/* Data & Security Section */}
                     {activeTab === 'data' && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-                            <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">Backup & Restore Data</h3>
+                            <h3 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">Pengelolaan & Keamanan Aplikasi</h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Backup Card */}
                                 <div className="border border-gray-200 rounded-xl p-6 space-y-4 hover:border-emerald-500 transition-colors">
                                     <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/20 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2">
@@ -707,7 +709,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                                     </div>
                                     <button
                                         onClick={onBackup}
-                                        className="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                                     >
                                         <Download size={18} />
                                         Download Backup
@@ -738,10 +740,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                                     />
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="w-full py-2.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                                     >
                                         <Upload size={18} />
                                         Pilih File Backup
+                                    </button>
+                                </div>
+
+                                {/* App Update Card */}
+                                <div className="border border-gray-200 rounded-xl p-6 space-y-4 hover:border-teal-500 transition-colors">
+                                    <div className="w-12 h-12 bg-teal-50 dark:bg-teal-950/20 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400 mb-2">
+                                        <RotateCw size={24} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-gray-800">Pembaruan Aplikasi</h4>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            Periksa apakah ada versi aplikasi terbaru yang dirilis oleh pengembang.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={onCheckForUpdates}
+                                        className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                                    >
+                                        <RotateCw size={18} />
+                                        Periksa Pembaruan
                                     </button>
                                 </div>
                             </div>
