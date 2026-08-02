@@ -516,13 +516,13 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
             </div>
 
             {/* Attendance List Area */}
-            <div className="flex-1 overflow-y-auto scrollbar-hide pb-28 pt-0">
-                <div className="bg-white dark:bg-[#12231A] rounded-b-2xl border border-emerald-100/60 dark:border-[#1E382B] divide-y divide-slate-100 dark:divide-[#192E23] overflow-hidden shadow-sm transition-colors">
+            <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-0">
+                <div className="bg-white dark:bg-[#12231A] rounded-b-2xl border border-emerald-100/60 dark:border-[#1E382B] divide-y divide-slate-100 dark:divide-[#192E23] overflow-hidden shadow-sm transition-colors mb-6">
                     {filteredStudents.length > 0 ? (
                         filteredStudents.map((student, index) => (
                             <div key={student.id} className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4 hover:bg-emerald-50/40 dark:hover:bg-[#16291F] transition-colors group">
                                 <div className="flex items-center gap-3.5 w-full sm:w-auto">
-                                    <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 shrink-0">
+                                    <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40 shrink-0">
                                         {index + 1}
                                     </div>
                                     <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#0C1A13] object-cover border border-slate-200 dark:border-[#1E382B]" />
@@ -587,21 +587,23 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Floating Save Action Button */}
-            <div className="fixed bottom-[88px] right-6 sm:bottom-8 sm:right-10 z-40">
-                <button
-                    onClick={handleSaveAttendance}
-                    disabled={isSaving}
-                    className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-bold text-sm text-white transition-all duration-300 shadow-xl shadow-emerald-900/30 border border-emerald-400/30 cursor-pointer ${isSaving
-                        ? 'bg-emerald-600 scale-105'
-                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 active:scale-95'
-                        }`}
-                >
-                    {isSaving ? <CheckCircle2 size={20} className="animate-spin" /> : <Save size={20} />}
-                    <span>{isSaving ? 'Menyimpan...' : 'Simpan Absensi'}</span>
-                </button>
+                {/* Save Button below the list */}
+                {filteredStudents.length > 0 && (
+                    <div className="flex justify-center sm:justify-end w-full mb-8">
+                        <button
+                            onClick={handleSaveAttendance}
+                            disabled={isSaving}
+                            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm text-white transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 cursor-pointer ${isSaving
+                                ? 'bg-emerald-600'
+                                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'
+                                }`}
+                        >
+                            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                            <span>{isSaving ? 'Menyimpan...' : 'Simpan Absensi'}</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
