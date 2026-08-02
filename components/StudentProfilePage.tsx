@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, PlusCircle, BookOpen, Star, MessageSquare, Award, TrendingUp, CalendarCheck, Edit, Trash2 } from 'lucide-react';
 import { Student, Teacher, User } from '../types';
-import { loadStudentSetoranLogs, loadStudentAttendanceLogs, getAssignedTeacher, updateSetoranLog, deleteSetoranLog } from '../services/appData';
+import { loadStudentSetoranLogs, loadStudentAttendanceLogs, getAssignedTeacher, updateSetoranLog, deleteSetoranLog, deleteAttendanceLog, saveAttendanceLogs } from '../services/appData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import Header from './Header';
 import EditSetoranModal from './EditSetoranModal';
@@ -151,6 +151,55 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
             alert(`Gagal memperbarui catatan setoran: ${e?.message || e}`);
         }
     };
+
+    const handleUpdateAttendanceStatus = async (logId: string, logDate: string, newStatus: 'present' | 'permission' | 'sick' | 'alpha') => {
+        if (!student) return;
+        
+        try {
+            const updatedRecord = {
+                id: logId,
+                studentId: student.id,
+                studentName: student.name,
+                class: student.class,
+                date: logDate,
+                status: newStatus
+            };
+
+            await saveAttendanceLogs([updatedRecord]);
+            
+            // Update local state
+            setAttendanceLogs(prev => prev.map(log => {
+                if (log.id === logId || log.date === logDate) {
+                    return { ...log, status: newStatus };
+                }
+                return log;
+            }));
+            
+            alert('Status kehadiran siswa berhasil diperbarui.');
+        } catch (e: any) {
+            console.error('Failed to update attendance status:', e);
+            alert(`Gagal memperbarui status kehadiran: ${e?.message || e}`);
+        }
+    };
+
+    const handleDeleteAttendanceLog = async (logId: string, logDate: string) => {
+        if (!window.confirm('Apakah Anda yakin ingin menghapus catatan kehadiran tanggal ini?')) {
+            return;
+        }
+
+        try {
+            await deleteAttendanceLog(logId);
+            
+            // Update local state
+            setAttendanceLogs(prev => prev.filter(log => log.id !== logId && log.date !== logDate));
+            
+            alert('Catatan kehadiran berhasil dihapus.');
+        } catch (e: any) {
+            console.error('Failed to delete attendance log:', e);
+            alert(`Gagal menghapus catatan kehadiran: ${e?.message || e}`);
+        }
+    };
+
 
 
     useEffect(() => {
@@ -311,6 +360,8 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
     };
 
     const renderTableContent = () => {
+        const isTeacher = user.role !== 'student' && user.role !== 'siswa';
+
         if (activeTab === 'kehadiran') {
             if (attendanceLogs.length === 0) {
                 return (
@@ -328,6 +379,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                             <th className="px-6 py-4">Hari</th>
                             <th className="px-6 py-4 text-center">Status Kehadiran</th>
                             <th className="px-6 py-4">Keterangan</th>
+                            {isTeacher && <th className="px-6 py-4 text-right">Aksi</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-[#1A2E24] font-medium text-slate-700 dark:text-[#E2EAE5]">
@@ -349,13 +401,38 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                                         {dayName}
                                     </td>
                                     <td className="px-6 py-4 text-center whitespace-nowrap">
-                                        <span className={`inline-flex items-center gap-0.5 px-3 py-1 rounded-full text-xs font-extrabold border ${statusConfig.className}`}>
-                                            {statusConfig.label}
-                                        </span>
+                                        {isTeacher ? (
+                                            <select
+                                                value={log.status}
+                                                onChange={(e) => handleUpdateAttendanceStatus(log.id || `${student.id}_${log.date}`, log.date, e.target.value as any)}
+                                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold border bg-white dark:bg-[#121F18] text-slate-800 dark:text-[#E2EAE5] cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 ${statusConfig.className}`}
+                                            >
+                                                <option value="present">Hadir</option>
+                                                <option value="permission">Izin</option>
+                                                <option value="sick">Sakit</option>
+                                                <option value="alpha">Alpha</option>
+                                            </select>
+                                        ) : (
+                                            <span className={`inline-flex items-center gap-0.5 px-3 py-1 rounded-full text-xs font-extrabold border ${statusConfig.className}`}>
+                                                {statusConfig.label}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-slate-500 dark:text-[#8BA398] text-xs">
-                                        -
+                                        {log.notes || '-'}
                                     </td>
+                                    {isTeacher && (
+                                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteAttendanceLog(log.id || `${student.id}_${log.date}`, log.date)}
+                                                className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-350 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer inline-flex items-center justify-center"
+                                                title="Hapus Kehadiran"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             );
                         })}
@@ -374,7 +451,8 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
             );
         }
 
-        const isTeacher = user.role === 'teacher';
+        const isTeacherForOldTabs = user.role === 'teacher';
+
 
         return (
             <table className="w-full text-sm text-left border-collapse">

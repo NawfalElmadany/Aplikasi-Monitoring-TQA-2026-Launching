@@ -565,6 +565,28 @@ export const loadStudentAttendanceLogs = async (studentId: string): Promise<Atte
   }
 };
 
+export const deleteAttendanceLog = async (id: string): Promise<void> => {
+  try {
+    const localLogs = JSON.parse(localStorage.getItem('tqa_attendance_logs') || '[]');
+    const updated = localLogs.filter((log: any) => log.id !== id);
+    localStorage.setItem('tqa_attendance_logs', JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to delete attendance log locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('attendance')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  } catch (error) {
+    console.error('Failed to delete attendance log from Supabase:', error);
+    throw error;
+  }
+};
+
 export const markStudentNotesAsRead = async (studentId: string): Promise<void> => {
   // Update locally first
   try {
