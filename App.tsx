@@ -35,10 +35,10 @@ const AttendancePage = lazy(() => import('./components/AttendancePage'));
 const TartiliPage = lazy(() => import('./components/TartiliPage'));
 const GharibPage = lazy(() => import('./components/GharibPage'));
 
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry } from './types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead, getAssignedTeacher } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
 import { useToast } from './context/ToastContext';
 
@@ -135,6 +135,26 @@ function App() {
       const isResetFlag = localStorage.getItem('tqa_is_reset') === 'true';
       return local ? JSON.parse(local) : (isResetFlag ? [] : INITIAL_GHARIB_ENTRIES);
    });
+
+   const INITIAL_TARTILI_SCHEDULE: TartiliEntry[] = [
+      { id: 1, className: '5B', date: '2026-06-30', status: 'Lanjut', jilid: 'Jilid 4', startPage: 20, endPage: 25, notes: 'Lancar' },
+      { id: 2, className: '5C', date: '2026-06-29', status: 'Lanjut', jilid: 'Jilid 3', startPage: 10, endPage: 15, notes: 'Lancar' },
+      { id: 3, className: '5D', date: '2026-06-28', status: 'Mengulang', jilid: 'Jilid 5', startPage: 1, endPage: 5, notes: 'Beberapa santri kurang lancar' },
+      { id: 4, className: '6C', date: '2026-06-27', status: 'Lanjut', jilid: 'Al-Qur\'an', startPage: 10, endPage: 12, notes: 'Lancar' },
+   ];
+
+   const [tartiliEntries, setTartiliEntries] = useState<TartiliEntry[]>(() => {
+      const local = localStorage.getItem('tqa_tartili_classical_history');
+      const isResetFlag = localStorage.getItem('tqa_is_reset') === 'true';
+      return local ? JSON.parse(local) : (isResetFlag ? [] : INITIAL_TARTILI_SCHEDULE);
+   });
+
+   useEffect(() => {
+      if (!isSupabaseConfigured) {
+         localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(tartiliEntries));
+      }
+   }, [tartiliEntries]);
+
 
    // Data State
    const [students, setStudents] = useState<Student[]>(() => {
@@ -585,13 +605,15 @@ function App() {
          }
 
          try {
-            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries] = await Promise.all([
+            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
                loadMurojaahEntries(),
                loadStudents(),
                loadAppSettings(),
                loadNotes(),
-               loadGharibEntries().catch(() => [])
+               loadGharibEntries().catch(() => []),
+               loadTartiliEntries().catch(() => [])
             ]);
+
 
             const isResetFlag = localStorage.getItem('tqa_is_reset') === 'true';
 
@@ -618,6 +640,10 @@ function App() {
             const nextGharibEntries = remoteGharibEntries.length > 0 
                ? remoteGharibEntries 
                : (isResetFlag ? [] : INITIAL_GHARIB_ENTRIES);
+            const nextTartiliEntries = remoteTartiliEntries.length > 0
+               ? remoteTartiliEntries
+               : (isResetFlag ? [] : INITIAL_TARTILI_SCHEDULE);
+
 
             if (remoteMurojaahEntries.length === 0 && !isResetFlag) {
                await seedMurojaahEntries(INITIAL_MUROJAAH_ENTRIES);
@@ -644,6 +670,7 @@ function App() {
             setTeachers(nextSettings.teachers);
             setNotes(nextNotes);
             setGharibEntries(nextGharibEntries);
+            setTartiliEntries(nextTartiliEntries);
          } catch (error: any) {
             console.error('Failed to bootstrap app data:', error);
             if (isMounted) {
@@ -662,6 +689,137 @@ function App() {
          isMounted = false;
       };
    }, []);
+
+   const handleSaveTartiliEntry = async (entry: Omit<TartiliEntry, 'id'>) => {
+      const tempId = Date.now();
+      const optimisticEntry: TartiliEntry = { ...entry, id: tempId };
+      setTartiliEntries(prev => [optimisticEntry, ...prev]);
+
+      if (isSupabaseConfigured) {
+         try {
+            const saved = await createTartiliEntry(entry);
+            setTartiliEntries(prev => prev.map(item => item.id === tempId ? saved : item));
+         } catch (error) {
+            console.error('Failed to save Tartili entry:', error);
+            setTartiliEntries(prev => prev.filter(item => item.id !== tempId));
+            alert('Gagal menyimpan jurnal Tartili ke database.');
+         }
+      }
+   };
+
+   const handleUpdateTartiliEntry = async (entry: TartiliEntry) => {
+      const existing = tartiliEntries.find(item => item.id === entry.id);
+      if (!existing) return;
+
+      setTartiliEntries(prev => prev.map(item => item.id === entry.id ? entry : item));
+
+      if (isSupabaseConfigured) {
+         try {
+            await updateTartiliEntry(entry);
+         } catch (error) {
+            console.error('Failed to update Tartili entry:', error);
+            setTartiliEntries(prev => prev.map(item => item.id === entry.id ? existing : item));
+            alert('Gagal memperbarui jurnal Tartili di database.');
+         }
+      }
+   };
+
+   const handleDeleteTartiliEntry = async (id: string | number) => {
+      const existing = tartiliEntries.find(item => item.id === id);
+      if (!existing) return;
+
+      setTartiliEntries(prev => prev.filter(item => item.id !== id));
+
+      if (isSupabaseConfigured) {
+         try {
+            await deleteTartiliEntry(id);
+         } catch (error) {
+            console.error('Failed to delete Tartili entry:', error);
+            setTartiliEntries(prev => [existing, ...prev].sort((a, b) => String(b.date).localeCompare(String(a.date))));
+            alert('Gagal menghapus jurnal Tartili dari database.');
+         }
+      }
+   };
+
+   const [isRefreshing, setIsRefreshing] = useState(false);
+
+   const handleRefreshData = async () => {
+      if (isRefreshing) return;
+      if (!isSupabaseConfigured) {
+         triggerGlobalToast('Aplikasi berjalan dalam mode lokal (offline).');
+         return;
+      }
+
+      setIsRefreshing(true);
+      try {
+         const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
+            loadMurojaahEntries(),
+            loadStudents(),
+            loadAppSettings(),
+            loadNotes(),
+            loadGharibEntries().catch(() => []),
+            loadTartiliEntries().catch(() => [])
+         ]);
+
+         setStudents(remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s)));
+         setMurojaahEntries(remoteMurojaahEntries);
+         if (remoteSettings) {
+            setAcademicYear(remoteSettings.academicYear);
+            setTargets(remoteSettings.targets);
+            setTeachers(remoteSettings.teachers);
+         }
+         setNotes(remoteNotes);
+         setGharibEntries(remoteGharibEntries);
+         setTartiliEntries(remoteTartiliEntries);
+
+         window.dispatchEvent(new Event('tqa_new_personal_message'));
+         triggerGlobalToast('Data berhasil disinkronkan dengan database.');
+      } catch (error) {
+         console.error('Failed to refresh data:', error);
+         triggerGlobalToast('Gagal melakukan sinkronisasi data.');
+      } finally {
+         setIsRefreshing(false);
+      }
+   };
+
+   // Background Polling sync every 30 seconds
+   useEffect(() => {
+      if (!isSupabaseConfigured) return;
+
+      const interval = setInterval(async () => {
+         try {
+            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
+               loadMurojaahEntries(),
+               loadStudents(),
+               loadAppSettings(),
+               loadNotes(),
+               loadGharibEntries().catch(() => []),
+               loadTartiliEntries().catch(() => [])
+            ]);
+
+            setStudents(prevStudents => {
+               const mapped = remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s));
+               return JSON.stringify(prevStudents) !== JSON.stringify(mapped) ? mapped : prevStudents;
+            });
+            setMurojaahEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteMurojaahEntries) ? remoteMurojaahEntries : prev);
+            if (remoteSettings) {
+               setAcademicYear(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.academicYear) ? remoteSettings.academicYear : prev);
+               setTargets(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.targets) ? remoteSettings.targets : prev);
+               setTeachers(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.teachers) ? remoteSettings.teachers : prev);
+            }
+            setNotes(prev => JSON.stringify(prev) !== JSON.stringify(remoteNotes) ? remoteNotes : prev);
+            setGharibEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteGharibEntries) ? remoteGharibEntries : prev);
+            setTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteTartiliEntries) ? remoteTartiliEntries : prev);
+
+            window.dispatchEvent(new Event('tqa_new_personal_message'));
+         } catch (error) {
+            console.warn('Background sync failed:', error);
+         }
+      }, 30000);
+
+      return () => clearInterval(interval);
+   }, []);
+
 
    useEffect(() => {
       if (!isSupabaseConfigured || isAppLoading) {
@@ -1011,8 +1169,13 @@ function App() {
                   onDismissNotification={handleDismissNotification}
                   onSearchClick={showQuickActions ? handleSearchClick : undefined}
                   unreadNotesCount={unreadNotesCount}
+                  schedule={tartiliEntries}
+                  onSaveEntry={handleSaveTartiliEntry}
+                  onUpdateEntry={handleUpdateTartiliEntry}
+                  onDeleteEntry={handleDeleteTartiliEntry}
                />
             );
+
          case 'gharib':
             return (
                <GharibPage
@@ -1406,6 +1569,8 @@ function App() {
                         flat={true}
                         title="Laporan Bulanan"
                         subtitle="Pilih periode dan kelas untuk melihat laporan kemajuan hafalan."
+                        onRefresh={handleRefreshData}
+                        isRefreshing={isRefreshing}
                         actionButton={
                            <button
                               onClick={downloadPDF}
@@ -1416,6 +1581,7 @@ function App() {
                            </button>
                         }
                      />
+
                   </div>
 
                   {/* Report Controls - Hidden on Print */}
@@ -1705,16 +1871,18 @@ function App() {
 
           <div className="flex-1 flex flex-col h-screen overflow-hidden relative pb-20 lg:pb-0">
              <main className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 !pt-0 scroll-smooth flex flex-col">
-                {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
-                   <Header
-                      user={user}
-                      onMenuClick={() => setIsSidebarOpen(true)}
-                      notifications={notifications}
-                      onDismissNotification={handleDismissNotification}
-                      onSearchClick={showQuickActions ? handleSearchClick : undefined}
-                      showGreeting={true}
-                   />
-                )}
+                 {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
+                    <Header
+                       user={user}
+                       onMenuClick={() => setIsSidebarOpen(true)}
+                       notifications={notifications}
+                       onDismissNotification={handleDismissNotification}
+                       onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                       showGreeting={true}
+                       onRefresh={handleRefreshData}
+                       isRefreshing={isRefreshing}
+                    />
+                 )}
                 <div key={activePage} className="animate-in fade-in slide-in-from-bottom-3 duration-500 ease-out w-full flex-1 flex flex-col min-h-0">
                    <Suspense fallback={<PageLoader />}>
                       {renderContent()}

@@ -3,11 +3,12 @@ import {
     Scroll, CheckCircle2, ChevronRight, ChevronLeft, Plus, Users, Save, X, BookOpen, StickyNote, Calendar, Pencil, Trash2,
     TrendingUp, Star, CalendarCheck, MessageSquare, Award
 } from 'lucide-react';
-import { Student, User } from '../types';
+import { Student, User, TartiliEntry } from '../types';
 import Header from './Header';
 import FloatingHeaderCard from './FloatingHeaderCard';
 import { loadStudentSetoranLogs, loadStudentAttendanceLogs, getAssignedTeacher } from '../services/appData';
 import { isSupabaseConfigured } from '../lib/supabase';
+
 
 interface TartiliPageProps {
     students?: Student[];
@@ -17,17 +18,10 @@ interface TartiliPageProps {
     onDismissNotification?: (studentId: string) => void;
     onSearchClick?: () => void;
     unreadNotesCount?: number;
-}
-
-interface TartiliEntry {
-    id: string | number;
-    className: string;
-    date: string;
-    status: 'Lanjut' | 'Mengulang';
-    jilid: string;
-    startPage: string | number;
-    endPage: string | number;
-    notes?: string;
+    schedule: TartiliEntry[];
+    onSaveEntry: (entry: Omit<TartiliEntry, 'id'>) => Promise<void>;
+    onUpdateEntry: (entry: TartiliEntry) => Promise<void>;
+    onDeleteEntry: (id: string | number) => Promise<void>;
 }
 
 const INITIAL_SCHEDULE: TartiliEntry[] = [
@@ -37,6 +31,7 @@ const INITIAL_SCHEDULE: TartiliEntry[] = [
     { id: 4, className: '6C', date: '2026-06-27', status: 'Lanjut', jilid: 'Al-Qur\'an', startPage: 10, endPage: 12, notes: 'Lancar' },
 ];
 
+
 const TartiliPage: React.FC<TartiliPageProps> = ({ 
     user, 
     students,
@@ -44,12 +39,13 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
     notifications = [],
     onDismissNotification,
     onSearchClick,
-    unreadNotesCount = 0
+    unreadNotesCount = 0,
+    schedule = [],
+    onSaveEntry,
+    onUpdateEntry,
+    onDeleteEntry
 }) => {
-    const [schedule, setSchedule] = useState<TartiliEntry[]>(() => {
-        const saved = localStorage.getItem('tqa_tartili_classical_history');
-        return saved ? JSON.parse(saved) : INITIAL_SCHEDULE;
-    });
+
 
     // Student states and memos for personalized view
     const [studentLogs, setStudentLogs] = useState<any[]>([]);
@@ -197,10 +193,7 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
     const [editEndPage, setEditEndPage] = useState('');
     const [editNotes, setEditNotes] = useState('');
 
-    // Save schedule to local storage
-    useEffect(() => {
-        localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(schedule));
-    }, [schedule]);
+
 
     // Auto-fill logic when "Mengulang" is selected (Add Form)
     useEffect(() => {
@@ -254,7 +247,7 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
         oscillator.stop(audioContext.currentTime + 0.5);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedClass || !selectedJilid || !startPage || !endPage) {
             alert('Semua pilihan kelas, jilid, dan halaman harus diisi.');
             return;
@@ -263,19 +256,18 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
         setIsSaving(true);
         playSuccessSound();
 
-        setTimeout(() => {
-            const newEntry: TartiliEntry = {
-                id: Date.now(),
-                className: selectedClass,
-                date,
-                status,
-                jilid: selectedJilid,
-                startPage: parseInt(startPage),
-                endPage: parseInt(endPage),
-                notes: notes.trim() || undefined
-            };
+        const newEntry: Omit<TartiliEntry, 'id'> = {
+            className: selectedClass,
+            date,
+            status,
+            jilid: selectedJilid,
+            startPage: parseInt(startPage),
+            endPage: parseInt(endPage),
+            notes: notes.trim() || undefined
+        };
 
-            setSchedule([newEntry, ...schedule]);
+        try {
+            await onSaveEntry(newEntry);
             setShowInput(false);
             setSelectedClass('');
             setSelectedJilid('');
@@ -284,9 +276,13 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
             setNotes('');
             setDate(new Date().toISOString().slice(0, 10));
             setStatus('Lanjut');
+        } catch (e) {
+            console.error("Failed to save entry:", e);
+        } finally {
             setIsSaving(false);
-        }, 600);
+        }
     };
+
 
     const handleEditClick = (entry: TartiliEntry) => {
         setSelectedJurnal(entry);
@@ -300,7 +296,7 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
         setIsEditModalOpen(true);
     };
 
-    const handleSaveJurnal = () => {
+    const handleSaveJurnal = async () => {
         if (!selectedJurnal) return;
         if (!editClass || !editJilid || !editStartPage || !editEndPage) {
             alert('Semua pilihan kelas, jilid, dan halaman harus diisi.');
@@ -310,35 +306,38 @@ const TartiliPage: React.FC<TartiliPageProps> = ({
         setIsSaving(true);
         playSuccessSound();
 
-        setTimeout(() => {
-            const updated = schedule.map(entry => {
-                if (entry.id === selectedJurnal.id) {
-                    return {
-                        ...entry,
-                        className: editClass,
-                        date: editDate,
-                        status: editStatus,
-                        jilid: editJilid,
-                        startPage: parseInt(editStartPage),
-                        endPage: parseInt(editEndPage),
-                        notes: editNotes.trim() || undefined
-                    };
-                }
-                return entry;
-            });
+        const updatedEntry: TartiliEntry = {
+            ...selectedJurnal,
+            className: editClass,
+            date: editDate,
+            status: editStatus,
+            jilid: editJilid,
+            startPage: parseInt(editStartPage),
+            endPage: parseInt(editEndPage),
+            notes: editNotes.trim() || undefined
+        };
 
-            setSchedule(updated);
+        try {
+            await onUpdateEntry(updatedEntry);
             setIsEditModalOpen(false);
             setSelectedJurnal(null);
+        } catch (e) {
+            console.error("Failed to update entry:", e);
+        } finally {
             setIsSaving(false);
-        }, 500);
-    };
-
-    const handleDeleteClick = (id: string | number) => {
-        if (confirm('Apakah Anda yakin ingin menghapus data jurnal Tartili ini?')) {
-            setSchedule(schedule.filter(entry => entry.id !== id));
         }
     };
+
+    const handleDeleteClick = async (id: string | number) => {
+        if (confirm('Apakah Anda yakin ingin menghapus data jurnal Tartili ini?')) {
+            try {
+                await onDeleteEntry(id);
+            } catch (e) {
+                console.error("Failed to delete entry:", e);
+            }
+        }
+    };
+
 
     const formatIndonesianDate = (dateStr: string) => {
         if (!dateStr) return '';

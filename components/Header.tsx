@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Bell, MessageSquare, Trash2, Search, Sun, Moon } from 'lucide-react';
+import { Menu, Bell, MessageSquare, Trash2, Search, Sun, Moon, RotateCw } from 'lucide-react';
 import { User, Student } from '../types';
 
 interface HeaderProps {
@@ -15,6 +15,8 @@ interface HeaderProps {
     backButton?: React.ReactNode; // New prop for back button
     showGreeting?: boolean;
     unreadNotesCount?: number;
+    onRefresh?: () => Promise<void>;
+    isRefreshing?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -29,7 +31,9 @@ const Header: React.FC<HeaderProps> = ({
     actionButton,
     backButton,
     showGreeting = false,
-    unreadNotesCount = 0
+    unreadNotesCount = 0,
+    onRefresh,
+    isRefreshing = false
 }) => {
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [isDark, setIsDark] = useState(() => {
@@ -195,6 +199,18 @@ const Header: React.FC<HeaderProps> = ({
                                     )}
                                 </div>
 
+                                {/* Sync/Refresh Button */}
+                                {onRefresh && (
+                                    <button
+                                        onClick={onRefresh}
+                                        disabled={isRefreshing}
+                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-[#1C3026] border border-slate-100 dark:border-[#1A2E24]/30 shadow-sm text-slate-500 dark:text-[#E2EAE5] hover:bg-slate-50 dark:hover:bg-[#1C3026]/80 active:scale-95 transition-all duration-150 disabled:opacity-50"
+                                        title="Sinkronisasi Data"
+                                    >
+                                        <RotateCw size={16} className={isRefreshing ? "animate-spin text-emerald-600" : ""} />
+                                    </button>
+                                )}
+
                                 {/* Theme Button */}
                                 <button
                                     onClick={toggleTheme}
@@ -243,6 +259,17 @@ const Header: React.FC<HeaderProps> = ({
                                     <Bell size={14} />
                                 </button>
                             </div>
+
+                            {onRefresh && (
+                                <button
+                                    onClick={onRefresh}
+                                    disabled={isRefreshing}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-[#1C3026] border border-slate-100 dark:border-[#1A2E24]/30 shadow-sm text-slate-500 dark:text-[#E2EAE5] hover:bg-slate-50 dark:hover:bg-[#1C3026]/80 active:scale-95 transition-all duration-150 disabled:opacity-50"
+                                    title="Sinkronisasi Data"
+                                >
+                                    <RotateCw size={14} className={isRefreshing ? "animate-spin text-emerald-600" : ""} />
+                                </button>
+                            )}
 
                             <button
                                 onClick={toggleTheme}
@@ -334,6 +361,18 @@ const Header: React.FC<HeaderProps> = ({
                                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white dark:border-[#1A2E24] shadow-md object-cover"
                             />
                         </div>
+
+                        {/* Sync/Refresh Button */}
+                        {onRefresh && (
+                            <button
+                                onClick={onRefresh}
+                                disabled={isRefreshing}
+                                className="p-2 rounded-full transition-colors duration-200 focus:outline-none hover:bg-slate-100 dark:hover:bg-[#1A2E24] text-gray-500 disabled:opacity-50"
+                                title="Sinkronisasi Data"
+                            >
+                                <RotateCw size={20} className={isRefreshing ? "animate-spin text-emerald-600" : ""} />
+                            </button>
+                        )}
 
                         {/* Vertical Divider */}
                         <div className="h-8 border-l border-gray-200 dark:border-[#1A2E24] mx-1 hidden sm:block"></div>

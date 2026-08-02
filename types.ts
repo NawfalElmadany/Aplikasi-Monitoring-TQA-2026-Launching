@@ -105,4 +105,27 @@ export interface AttendanceRecord {
   createdAt?: string;
 }
 
+export interface PersonalMessage {
+  id: string;
+  date: string;
+  studentId: string;
+  studentName: string;
+  message: string;
+  status: 'Terkirim' | 'Dibaca';
+  createdAt?: string;
+}
+
+export interface TartiliEntry {
+  id: string | number;
+  className: string;
+  date: string;
+  status: 'Lanjut' | 'Mengulang';
+  jilid: string;
+  startPage: string | number;
+  endPage: string | number;
+  notes?: string;
+  createdAt?: string;
+}
+
+
 

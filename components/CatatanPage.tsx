@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreVertical, Calendar, X, Save, Trash2, Edit2, ChevronDown, GraduationCap, BookOpen, AlertCircle, LayoutGrid, Users, CheckCircle2, AlertTriangle, Info, Send, MessageSquare } from 'lucide-react';
-import { Note, User, Student } from '../types';
+import { Note, User, Student, PersonalMessage } from '../types';
 import Header from './Header';
 import FloatingHeaderCard from './FloatingHeaderCard';
-import { loadStudentSetoranLogs } from '../services/appData';
+import { loadStudentSetoranLogs, loadPersonalMessages, createPersonalMessage, markPersonalMessagesAsReadInDb } from '../services/appData';
 
 const CATEGORIES = [
     { name: 'Libur', color: 'bg-red-50 text-red-700 border border-red-200' },
@@ -150,67 +150,86 @@ const CatatanPage: React.FC<CatatanPageProps> = ({
     // Mark student messages as read when viewing the page
     useEffect(() => {
         if (isStudent && currentStudent) {
-            const stored = localStorage.getItem('tqa_personal_messages');
-            if (stored) {
-                const currentMsgs = JSON.parse(stored);
-                let changed = false;
-                const updated = currentMsgs.map((msg: any) => {
-                    if (
-                        (msg.studentId === currentStudent.id || msg.studentName.toUpperCase() === currentStudent.name.toUpperCase()) &&
-                        msg.status === 'Terkirim'
-                    ) {
-                        msg.status = 'Dibaca';
-                        changed = true;
-                    }
-                    return msg;
-                });
-                if (changed) {
-                    localStorage.setItem('tqa_personal_messages', JSON.stringify(updated));
-                    setPersonalMessages(updated);
+            if (isSyncing) {
+                void markPersonalMessagesAsReadInDb(currentStudent.id).then(() => {
                     window.dispatchEvent(new Event('tqa_new_personal_message'));
+                }).catch(e => console.error("Failed to mark messages as read:", e));
+            } else {
+                const stored = localStorage.getItem('tqa_personal_messages');
+                if (stored) {
+                    const currentMsgs = JSON.parse(stored);
+                    let changed = false;
+                    const updated = currentMsgs.map((msg: any) => {
+                        if (
+                            (msg.studentId === currentStudent.id || msg.studentName.toUpperCase() === currentStudent.name.toUpperCase()) &&
+                            msg.status === 'Terkirim'
+                        ) {
+                            msg.status = 'Dibaca';
+                            changed = true;
+                        }
+                        return msg;
+                    });
+                    if (changed) {
+                        localStorage.setItem('tqa_personal_messages', JSON.stringify(updated));
+                        setPersonalMessages(updated);
+                        window.dispatchEvent(new Event('tqa_new_personal_message'));
+                    }
                 }
             }
         }
-    }, [isStudent, currentStudent]);
+    }, [isStudent, currentStudent, isSyncing]);
 
     // Load personal messages
     useEffect(() => {
-        const loadMessages = () => {
-            const stored = localStorage.getItem('tqa_personal_messages');
-            if (stored) {
-                setPersonalMessages(JSON.parse(stored));
-            } else {
-                const sampleMessages: PersonalMessage[] = [
-                    {
-                        id: '1',
-                        date: '2026-07-03',
-                        studentId: 'std-1',
-                        studentName: 'Ahmad Fauzi',
-                        message: 'Semangat murojaah jilid 4 ya nak, Ustadz perhatikan pelafalan huruf shod-nya masih sering tertukar.',
-                        status: 'Dibaca'
-                    },
-                    {
-                        id: '2',
-                        date: '2026-07-04',
-                        studentId: 'std-2',
-                        studentName: 'Aisyah Humaira',
-                        message: 'Alhamdulillah hafalan Surah An-Naba sudah lancar sekali. Pertahankan tajwidnya ya nak.',
-                        status: 'Terkirim'
+        let isMounted = true;
+        const loadMessages = async () => {
+            if (isSyncing) {
+                try {
+                    const remoteMsgs = await loadPersonalMessages();
+                    if (isMounted) {
+                        setPersonalMessages(remoteMsgs);
                     }
-                ];
-                localStorage.setItem('tqa_personal_messages', JSON.stringify(sampleMessages));
-                setPersonalMessages(sampleMessages);
+                } catch (e) {
+                    console.error("Failed to load personal messages from Supabase:", e);
+                }
+            } else {
+                const stored = localStorage.getItem('tqa_personal_messages');
+                if (stored) {
+                    if (isMounted) setPersonalMessages(JSON.parse(stored));
+                } else {
+                    const sampleMessages: PersonalMessage[] = [
+                        {
+                            id: '1',
+                            date: '2026-07-03',
+                            studentId: 'std-1',
+                            studentName: 'Ahmad Fauzi',
+                            message: 'Semangat murojaah jilid 4 ya nak, Ustadz perhatikan pelafalan huruf shod-nya masih sering tertukar.',
+                            status: 'Dibaca'
+                        },
+                        {
+                            id: '2',
+                            date: '2026-07-04',
+                            studentId: 'std-2',
+                            studentName: 'Aisyah Humaira',
+                            message: 'Alhamdulillah hafalan Surah An-Naba sudah lancar sekali. Pertahankan tajwidnya ya nak.',
+                            status: 'Terkirim'
+                        }
+                    ];
+                    localStorage.setItem('tqa_personal_messages', JSON.stringify(sampleMessages));
+                    if (isMounted) setPersonalMessages(sampleMessages);
+                }
             }
         };
 
-        loadMessages();
+        void loadMessages();
         window.addEventListener('tqa_new_personal_message', loadMessages);
         return () => {
+            isMounted = false;
             window.removeEventListener('tqa_new_personal_message', loadMessages);
         };
-    }, []);
+    }, [isSyncing]);
 
-    const handleSendPersonalMessage = () => {
+    const handleSendPersonalMessage = async () => {
         if (!selectedStudentId) {
             alert('Mohon pilih siswa terlebih dahulu');
             return;
@@ -223,8 +242,7 @@ const CatatanPage: React.FC<CatatanPageProps> = ({
         const student = students.find(s => s.id === selectedStudentId);
         if (!student) return;
 
-        const newMessage: PersonalMessage = {
-            id: Date.now().toString(),
+        const newMessage: Omit<PersonalMessage, 'id'> & { id?: string } = {
             date: new Date().toISOString().slice(0, 10),
             studentId: selectedStudentId,
             studentName: student.name,
@@ -232,9 +250,21 @@ const CatatanPage: React.FC<CatatanPageProps> = ({
             status: 'Terkirim'
         };
 
-        const updated = [newMessage, ...personalMessages];
-        localStorage.setItem('tqa_personal_messages', JSON.stringify(updated));
-        setPersonalMessages(updated);
+        if (isSyncing) {
+            try {
+                const saved = await createPersonalMessage(newMessage);
+                setPersonalMessages(prev => [saved, ...prev]);
+                window.dispatchEvent(new Event('tqa_new_personal_message'));
+            } catch (err) {
+                console.error("Failed to save message to Supabase:", err);
+            }
+        } else {
+            const localMsg = { ...newMessage, id: Date.now().toString() } as PersonalMessage;
+            const updated = [localMsg, ...personalMessages];
+            localStorage.setItem('tqa_personal_messages', JSON.stringify(updated));
+            setPersonalMessages(updated);
+            window.dispatchEvent(new Event('tqa_new_personal_message'));
+        }
         
         setSelectedStudentId('');
         setSearchTerm('');

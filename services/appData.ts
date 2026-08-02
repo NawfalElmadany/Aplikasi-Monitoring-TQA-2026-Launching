@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord } from '../types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord, PersonalMessage, TartiliEntry } from '../types';
 
 
 type AppSettingsPayload = {
@@ -918,4 +918,244 @@ export const getAssignedTeacher = (name: string, studentClass: string, studentIn
     };
   }
 };
+
+export const loadPersonalMessages = async (): Promise<PersonalMessage[]> => {
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('personal_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(row => ({
+      id: String(row.id),
+      date: row.message_date,
+      studentId: row.student_id,
+      studentName: row.student_name,
+      message: row.message,
+      status: row.status,
+    }));
+  } catch (error) {
+    console.warn('Failed to load from Supabase, loading from localStorage:', error);
+    return JSON.parse(localStorage.getItem('tqa_personal_messages') || '[]');
+  }
+};
+
+export const createPersonalMessage = async (msg: Omit<PersonalMessage, 'id'> & { id?: string }): Promise<PersonalMessage> => {
+  // Save locally first
+  const localId = msg.id || String(Date.now());
+  try {
+    const localMsgs = JSON.parse(localStorage.getItem('tqa_personal_messages') || '[]');
+    const localMsg = { ...msg, id: localId };
+    localMsgs.unshift(localMsg);
+    localStorage.setItem('tqa_personal_messages', JSON.stringify(localMsgs));
+  } catch (e) {
+    console.error('Failed to save message locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const row = {
+      student_id: msg.studentId,
+      student_name: msg.studentName,
+      message: msg.message,
+      status: msg.status,
+      message_date: msg.date,
+    };
+    const { data, error } = await client
+      .from('personal_messages')
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      id: String(data.id),
+      date: data.message_date,
+      studentId: data.student_id,
+      studentName: data.student_name,
+      message: data.message,
+      status: data.status,
+    };
+  } catch (error) {
+    console.warn('Failed to save to Supabase, returning optimistic message:', error);
+    return {
+      id: localId,
+      date: msg.date,
+      studentId: msg.studentId,
+      studentName: msg.studentName,
+      message: msg.message,
+      status: msg.status,
+    };
+  }
+};
+
+export const markPersonalMessagesAsReadInDb = async (studentId: string): Promise<void> => {
+  // Update locally first
+  try {
+    const localMsgs = JSON.parse(localStorage.getItem('tqa_personal_messages') || '[]');
+    const updated = localMsgs.map((msg: any) => {
+      if (msg.studentId === studentId && msg.status === 'Terkirim') {
+        return { ...msg, status: 'Dibaca' };
+      }
+      return msg;
+    });
+    localStorage.setItem('tqa_personal_messages', JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to mark local messages as read:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('personal_messages')
+      .update({ status: 'Dibaca' })
+      .eq('student_id', studentId)
+      .eq('status', 'Terkirim');
+    if (error) throw error;
+  } catch (err) {
+    console.warn('Failed to update read status on Supabase:', err);
+  }
+};
+
+export const loadTartiliEntries = async (): Promise<TartiliEntry[]> => {
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('jurnal_tartili')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data ?? []).map(row => ({
+      id: row.id,
+      className: row.class_name,
+      date: row.entry_date,
+      status: row.status,
+      jilid: row.jilid,
+      startPage: row.start_page,
+      endPage: row.end_page,
+      notes: row.notes ?? undefined,
+    }));
+  } catch (error) {
+    console.warn('Failed to load from Supabase, loading from localStorage:', error);
+    return JSON.parse(localStorage.getItem('tqa_tartili_classical_history') || '[]');
+  }
+};
+
+export const createTartiliEntry = async (entry: Omit<TartiliEntry, 'id'>): Promise<TartiliEntry> => {
+  // Save locally first
+  const tempId = Date.now();
+  try {
+    const localHistory = JSON.parse(localStorage.getItem('tqa_tartili_classical_history') || '[]');
+    localHistory.unshift({ ...entry, id: tempId });
+    localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(localHistory));
+  } catch (e) {
+    console.error('Failed to save Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const row = {
+      class_name: entry.className,
+      entry_date: entry.date,
+      status: entry.status,
+      jilid: entry.jilid,
+      start_page: Number(entry.startPage),
+      end_page: Number(entry.endPage),
+      notes: entry.notes || null,
+    };
+    const { data, error } = await client
+      .from('jurnal_tartili')
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      id: data.id,
+      className: data.class_name,
+      date: data.entry_date,
+      status: data.status,
+      jilid: data.jilid,
+      startPage: data.start_page,
+      endPage: data.end_page,
+      notes: data.notes ?? undefined,
+    };
+  } catch (error) {
+    console.warn('Failed to create Jurnal Tartili in Supabase, returning optimistic:', error);
+    return { ...entry, id: tempId };
+  }
+};
+
+export const updateTartiliEntry = async (entry: TartiliEntry): Promise<TartiliEntry> => {
+  // Save locally first
+  try {
+    const localHistory = JSON.parse(localStorage.getItem('tqa_tartili_classical_history') || '[]');
+    const updated = localHistory.map((item: any) => item.id === entry.id ? entry : item);
+    localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to update Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const row = {
+      class_name: entry.className,
+      entry_date: entry.date,
+      status: entry.status,
+      jilid: entry.jilid,
+      start_page: Number(entry.startPage),
+      end_page: Number(entry.endPage),
+      notes: entry.notes || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await client
+      .from('jurnal_tartili')
+      .update(row)
+      .eq('id', entry.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      id: data.id,
+      className: data.class_name,
+      date: data.entry_date,
+      status: data.status,
+      jilid: data.jilid,
+      startPage: data.start_page,
+      endPage: data.end_page,
+      notes: data.notes ?? undefined,
+    };
+  } catch (error) {
+    console.warn('Failed to update Jurnal Tartili in Supabase:', error);
+    return entry;
+  }
+};
+
+export const deleteTartiliEntry = async (id: string | number): Promise<void> => {
+  // Delete locally first
+  try {
+    const localHistory = JSON.parse(localStorage.getItem('tqa_tartili_classical_history') || '[]');
+    const filtered = localHistory.filter((item: any) => item.id !== id);
+    localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(filtered));
+  } catch (e) {
+    console.error('Failed to delete Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('jurnal_tartili')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Failed to delete Jurnal Tartili from Supabase:', error);
+  }
+};
+
 
