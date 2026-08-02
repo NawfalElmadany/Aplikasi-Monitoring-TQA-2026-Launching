@@ -590,7 +590,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
             </div>
 
             {/* Floating Save Action Button */}
-            <div className="fixed bottom-6 right-6 sm:right-10 z-40">
+            <div className="fixed bottom-[88px] right-6 sm:bottom-8 sm:right-10 z-40">
                 <button
                     onClick={handleSaveAttendance}
                     disabled={isSaving}
