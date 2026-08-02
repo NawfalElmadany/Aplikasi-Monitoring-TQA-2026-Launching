@@ -3,7 +3,7 @@ import { Users, Search, Filter, CalendarCheck, Check, X, Clock, FileText, Save, 
 import { Student, User, AttendanceRecord } from '../types';
 import Header from './Header';
 import FloatingHeaderCard from './FloatingHeaderCard';
-import { loadAttendanceLogs, saveAttendanceLogs, loadStudentAttendanceLogs } from '../services/appData';
+import { loadAttendanceLogs, saveAttendanceLogs, loadStudentAttendanceLogs, getAssignedTeacher } from '../services/appData';
 
 
 interface AttendancePageProps {
@@ -87,12 +87,14 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
     }, [attLogs]);
 
     const [selectedClass, setSelectedClass] = useState('5B');
+    const [selectedTeacher, setSelectedTeacher] = useState('Semua');
     const [searchQuery, setSearchQuery] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [isScrolled, setIsScrolled] = useState(false);
+
 
     useEffect(() => {
         const mainContainer = document.querySelector('main');
@@ -143,10 +145,18 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
     };
 
     // Derived state
-    const filteredStudents = students.filter(student =>
-        student.class === selectedClass &&
-        student.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredStudents = useMemo(() => {
+        return students.filter((student, index) => {
+            const matchesClass = selectedClass === 'Semua' || student.class === selectedClass;
+            const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            const teacherInfo = getAssignedTeacher(student.name, student.class, index);
+            const matchesTeacher = selectedTeacher === 'Semua' || teacherInfo.name === selectedTeacher;
+            
+            return matchesClass && matchesSearch && matchesTeacher;
+        });
+    }, [students, selectedClass, searchQuery, selectedTeacher]);
+
 
     // Attendance state
     const [attendance, setAttendance] = useState<Record<string, 'present' | 'permission' | 'sick' | 'alpha'>>({});
@@ -157,7 +167,8 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
         let isMounted = true;
         const fetchAttendance = async () => {
             try {
-                const logs = await loadAttendanceLogs(date, selectedClass);
+                const classFilter = selectedTeacher !== 'Semua' ? 'Semua' : selectedClass;
+                const logs = await loadAttendanceLogs(date, classFilter);
                 if (isMounted) {
                     const recordMap: Record<string, 'present' | 'permission' | 'sick' | 'alpha'> = {};
                     logs.forEach(log => {
@@ -177,7 +188,8 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
         return () => {
             isMounted = false;
         };
-    }, [date, selectedClass]);
+    }, [date, selectedClass, selectedTeacher]);
+
 
     const handleAttendanceChange = (studentId: string, status: 'present' | 'permission' | 'sick' | 'alpha') => {
         setAttendance(prev => ({
@@ -223,8 +235,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
     const handleSaveAttendance = async () => {
         setIsSaving(true);
         try {
-            const classStudents = students.filter(s => s.class === selectedClass);
-            const recordsToSave: AttendanceRecord[] = classStudents.map(student => ({
+            const recordsToSave: AttendanceRecord[] = filteredStudents.map(student => ({
                 id: `${student.id}_${date}`,
                 studentId: student.id,
                 studentName: student.name,
@@ -248,6 +259,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
             setIsSaving(false);
         }
     };
+
 
 
 
@@ -441,6 +453,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                             onChange={(e) => setSelectedClass(e.target.value)}
                             className="w-full sm:w-auto appearance-none bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold cursor-pointer transition-colors"
                         >
+                            <option value="Semua">Semua Kelas</option>
                             <option value="5B">Kelas 5B</option>
                             <option value="5C">Kelas 5C</option>
                             <option value="5D">Kelas 5D</option>
@@ -449,6 +462,22 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                         </select>
                         <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] pointer-events-none" size={16} />
                     </div>
+
+                    {/* Teacher Selector */}
+                    <div className="relative">
+                        <select
+                            value={selectedTeacher}
+                            onChange={(e) => setSelectedTeacher(e.target.value)}
+                            className="w-full sm:w-auto appearance-none bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] text-slate-800 dark:text-[#E2EAE5] py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold cursor-pointer transition-colors"
+                        >
+                            <option value="Semua">Semua Pengampu</option>
+                            <option value="Ustadz Nawfal">Ustadz Nawfal</option>
+                            <option value="Ustadzah Ining">Ustadzah Ining</option>
+                            <option value="Ustadzah Rahma">Ustadzah Rahma</option>
+                        </select>
+                        <Users className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-[#6B8578] pointer-events-none" size={16} />
+                    </div>
+
 
                     {/* Date Picker */}
                     <input
@@ -499,8 +528,16 @@ const AttendancePage: React.FC<AttendancePageProps> = ({
                                     <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#0C1A13] object-cover border border-slate-200 dark:border-[#1E382B]" />
                                     <div>
                                         <p className="font-bold text-slate-800 dark:text-white text-sm sm:text-base leading-tight">{student.name}</p>
-                                        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md inline-block mt-1 border border-emerald-200/50 dark:border-emerald-800/30">Kelas {student.class}</p>
+                                        <div className="flex flex-wrap gap-1.5 mt-1">
+                                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-800/30">
+                                                Kelas {student.class}
+                                            </span>
+                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${getAssignedTeacher(student.name, student.class, index).colorClass}`}>
+                                                {getAssignedTeacher(student.name, student.class, index).name}
+                                            </span>
+                                        </div>
                                     </div>
+
                                 </div>
 
                                 <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 dark:bg-[#0C1A13] p-1.5 rounded-xl border border-slate-200/60 dark:border-[#1A2E24] w-full sm:w-auto justify-center">
