@@ -419,8 +419,28 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                     >
                                         <div className="flex items-center gap-4 min-w-0">
                                             <img src={student.avatar} alt={student.name} className="w-11 h-11 rounded-full object-cover border border-slate-100" />
-                                            <div className="min-w-0">
-                                                <h4 className="font-bold text-slate-800 text-sm truncate">{student.name}</h4>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <h4 
+                                                        onClick={() => onViewProfile && onViewProfile(student)}
+                                                        className="font-bold text-slate-800 text-sm truncate hover:text-emerald-600 hover:underline cursor-pointer transition-all"
+                                                        title="Lihat Detail Informasi Siswa"
+                                                    >
+                                                        {student.name}
+                                                    </h4>
+                                                    {onViewProfile && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onViewProfile(student);
+                                                            }}
+                                                            className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-0.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                                                            title="Lihat Detail Informasi Siswa"
+                                                        >
+                                                            <UserIcon size={13} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 font-semibold">
                                                     <span className="bg-slate-100 px-1.5 py-0.5 rounded">{student.class}</span>
                                                     <span className="text-slate-300">•</span>
@@ -433,31 +453,17 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {onViewProfile && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onViewProfile(student);
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-[#1C3026]/40 rounded-xl transition-all cursor-pointer"
-                                                    title="Lihat Detail Informasi Siswa"
-                                                >
-                                                    <UserIcon size={16} />
-                                                </button>
-                                            )}
-                                            <div className="flex flex-col items-end justify-center min-w-[70px] text-right">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">NILAI</span>
-                                                <span className="font-black text-slate-800 text-base mt-1.5 leading-none">{log.score || log.lastScore || '-'}</span>
-                                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-extrabold mt-2 whitespace-nowrap border ${
-                                                    log.status === 'Mumtaz' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    log.status === 'Perlu Bimbingan' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                                    'bg-amber-50 text-amber-700 border-amber-200'
-                                                }`}>
-                                                    {log.status === 'Mumtaz' ? <CheckCircle size={8} /> : <AlertCircle size={8} />}
-                                                    {log.status}
-                                                </span>
-                                            </div>
+                                        <div className="flex flex-col items-end justify-center shrink-0 min-w-[70px] text-right">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">NILAI</span>
+                                            <span className="font-black text-slate-800 text-base mt-1.5 leading-none">{log.score || log.lastScore || '-'}</span>
+                                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-extrabold mt-2 whitespace-nowrap border ${
+                                                log.status === 'Mumtaz' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                log.status === 'Perlu Bimbingan' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                'bg-amber-50 text-amber-700 border-amber-200'
+                                            }`}>
+                                                {log.status === 'Mumtaz' ? <CheckCircle size={8} /> : <AlertCircle size={8} />}
+                                                {log.status}
+                                            </span>
                                         </div>
                                     </div>
                                 ))
@@ -493,8 +499,28 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                     >
                                         <div className="flex items-center gap-4 min-w-0">
                                             <img src={student.avatar} alt={student.name} className="w-11 h-11 rounded-full object-cover border border-slate-100" />
-                                            <div className="min-w-0">
-                                                <h4 className="font-bold text-slate-800 text-sm truncate">{student.name}</h4>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                    <h4 
+                                                        onClick={() => onViewProfile && onViewProfile(student)}
+                                                        className="font-bold text-slate-800 text-sm truncate hover:text-emerald-600 hover:underline cursor-pointer transition-all"
+                                                        title="Lihat Detail Informasi Siswa"
+                                                    >
+                                                        {student.name}
+                                                    </h4>
+                                                    {onViewProfile && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onViewProfile(student);
+                                                            }}
+                                                            className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-0.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                                                            title="Lihat Detail Informasi Siswa"
+                                                        >
+                                                            <UserIcon size={13} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500 font-semibold">
                                                     <span className="bg-slate-100 px-1.5 py-0.5 rounded">{student.class}</span>
                                                     <span className="text-slate-300">•</span>
@@ -503,27 +529,13 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {onViewProfile && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onViewProfile(student);
-                                                    }}
-                                                    className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-[#1C3026]/40 rounded-xl transition-all cursor-pointer"
-                                                    title="Lihat Detail Informasi Siswa"
-                                                >
-                                                    <UserIcon size={16} />
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => onQuickInput(student)}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 font-extrabold text-xs transition-all duration-200 hover:bg-emerald-100 hover:text-emerald-700 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
-                                            >
-                                                <PlusCircle size={14} />
-                                                <span>Input Setoran</span>
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => onQuickInput(student)}
+                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-600 font-extrabold text-xs transition-all duration-200 hover:bg-emerald-100 hover:text-emerald-700 hover:scale-105 active:scale-95 cursor-pointer shadow-sm shrink-0"
+                                        >
+                                            <PlusCircle size={14} />
+                                            <span>Input Setoran</span>
+                                        </button>
                                     </div>
                                 ))
                             ) : (
