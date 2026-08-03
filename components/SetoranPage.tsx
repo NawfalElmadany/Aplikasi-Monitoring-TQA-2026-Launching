@@ -15,6 +15,8 @@ interface SetoranPageProps {
     onDismissNotification?: (studentId: string) => void;
     onSearchClick?: () => void;
     onViewProfile?: (student: Student) => void;
+    onCancelInput?: () => void;
+    onSaveFinished?: (student: Student) => void;
 }
 
 // Data Surah Mapping (Reused from NewSetoranModal)
@@ -57,7 +59,9 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
     notifications = [],
     onDismissNotification,
     onSearchClick,
-    onViewProfile
+    onViewProfile,
+    onCancelInput,
+    onSaveFinished
 }) => {
     const defaultTeacher = useMemo(() => {
         if (user && user.role === 'teacher') {
@@ -361,11 +365,17 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
             setJenisSetoran('Lanjut');
             setSetoranBerdasarkanAyat(false);
             setInputDate(new Date().toLocaleDateString('en-CA'));
+            
+            const tempStudent = selectedStudent;
             setSelectedStudent(null);
 
-            // Show Toast Notification
-            setToastStudentName(studentName);
-            setShowToast(true);
+            if (onSaveFinished) {
+                onSaveFinished(tempStudent);
+            } else {
+                // Show Toast Notification
+                setToastStudentName(studentName);
+                setShowToast(true);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -552,7 +562,13 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                     
                                     {/* Back Button on Mobile */}
                                     <button
-                                        onClick={() => setSelectedStudent(null)}
+                                        onClick={() => {
+                                            if (onCancelInput) {
+                                                onCancelInput();
+                                            } else {
+                                                setSelectedStudent(null);
+                                            }
+                                        }}
                                         className="lg:hidden mb-4 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold transition-all relative z-20 cursor-pointer"
                                     >
                                         <ChevronLeft size={14} />
@@ -890,7 +906,13 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                 {/* Footer / Actions */}
                                 <div className="p-4 border-t border-slate-100 dark:border-[#1E382B] bg-white dark:bg-[#12231A] shrink-0 z-20 shadow-md flex-none w-full flex justify-end items-center gap-4 px-6 transition-colors">
                                     <button
-                                        onClick={() => setSelectedStudent(null)}
+                                        onClick={() => {
+                                            if (onCancelInput) {
+                                                onCancelInput();
+                                            } else {
+                                                setSelectedStudent(null);
+                                            }
+                                        }}
                                         disabled={isSubmitting}
                                         className="px-5 py-3 sm:px-8 sm:py-3.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F] transition-all cursor-pointer"
                                     >

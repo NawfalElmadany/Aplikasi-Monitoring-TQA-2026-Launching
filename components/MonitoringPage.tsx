@@ -24,10 +24,18 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     onDismissNotification,
     onSearchClick
 }) => {
-    const [selectedClass, setSelectedClass] = useState<string>('Semua');
-    const [selectedTeacher, setSelectedTeacher] = useState<string>('Semua');
-    const [activeTeacher, setActiveTeacher] = useState<string>('Semua');
+    const [selectedClass, setSelectedClass] = useState<string>(() => {
+        return localStorage.getItem('tqa_monitoring_selected_class') || 'Semua';
+    });
+    const [selectedTeacher, setSelectedTeacher] = useState<string>(() => {
+        return localStorage.getItem('tqa_monitoring_selected_teacher') || 'Semua';
+    });
+    const [activeTeacher, setActiveTeacher] = useState<string>(() => {
+        return localStorage.getItem('tqa_monitoring_selected_teacher') || 'Semua';
+    });
     const [selectedDate, setSelectedDate] = useState(() => {
+        const storedDate = localStorage.getItem('tqa_monitoring_selected_date');
+        if (storedDate) return storedDate;
         const d = new Date();
         const offset = d.getTimezoneOffset();
         const localDate = new Date(d.getTime() - (offset * 60 * 1000));
@@ -35,13 +43,29 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     });
 
     // Active filters used for rendering the list (to prevent instant switches before fade transitions)
-    const [activeClass, setActiveClass] = useState<string>('Semua');
+    const [activeClass, setActiveClass] = useState<string>(() => {
+        return localStorage.getItem('tqa_monitoring_selected_class') || 'Semua';
+    });
     const [activeDate, setActiveDate] = useState<string>(() => {
+        const storedDate = localStorage.getItem('tqa_monitoring_selected_date');
+        if (storedDate) return storedDate;
         const d = new Date();
         const offset = d.getTimezoneOffset();
         const localDate = new Date(d.getTime() - (offset * 60 * 1000));
         return localDate.toISOString().slice(0, 10);
     });
+
+    useEffect(() => {
+        localStorage.setItem('tqa_monitoring_selected_class', selectedClass);
+    }, [selectedClass]);
+
+    useEffect(() => {
+        localStorage.setItem('tqa_monitoring_selected_teacher', selectedTeacher);
+    }, [selectedTeacher]);
+
+    useEffect(() => {
+        localStorage.setItem('tqa_monitoring_selected_date', selectedDate);
+    }, [selectedDate]);
 
     const [logs, setLogs] = useState<any[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);

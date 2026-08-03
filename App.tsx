@@ -64,6 +64,7 @@ function App() {
    const [showMobileLogoutConfirm, setShowMobileLogoutConfirm] = useState(false);
    const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
    const [profileReferrer, setProfileReferrer] = useState('santri');
+   const [inputSetoranReferrer, setInputSetoranReferrer] = useState<string | null>(null);
    const [globalToastShow, setGlobalToastShow] = useState(false);
    const [globalToastMsg, setGlobalToastMsg] = useState('');
 
@@ -1135,6 +1136,24 @@ function App() {
                      setProfileReferrer('input_setoran');
                      setActivePage('profil_siswa');
                   }}
+                  onCancelInput={() => {
+                     if (inputSetoranReferrer) {
+                        setActivePage(inputSetoranReferrer);
+                        setInputSetoranReferrer(null);
+                     } else {
+                        setPreSelectedStudent(null);
+                     }
+                  }}
+                  onSaveFinished={(student) => {
+                     if (inputSetoranReferrer) {
+                        triggerGlobalToast(`Data setoran untuk ${student.name} berhasil disimpan.`);
+                        setActivePage(inputSetoranReferrer);
+                        setInputSetoranReferrer(null);
+                     } else {
+                        triggerGlobalToast(`Data setoran untuk ${student.name} berhasil disimpan.`);
+                        setPreSelectedStudent(null);
+                     }
+                  }}
                />
             );
          case 'santri':
@@ -1143,6 +1162,7 @@ function App() {
                   students={students}
                   onInputNilai={(student) => {
                      setPreSelectedStudent(student);
+                     setInputSetoranReferrer('santri');
                      setActivePage('input_setoran');
                   }}
                   onViewHistory={(student) => {
@@ -1197,6 +1217,7 @@ function App() {
                    students={students}
                    onQuickInput={(student) => {
                       setPreSelectedStudent(student);
+                      setInputSetoranReferrer('riwayat');
                       setActivePage('input_setoran');
                    }}
                    user={user}
@@ -1245,6 +1266,7 @@ function App() {
                     onBack={() => setActivePage(profileReferrer)}
                     onInputSetoran={(student) => {
                        setPreSelectedStudent(student);
+                       setInputSetoranReferrer('profil_siswa');
                        setActivePage('input_setoran');
                     }}
                     onUpdateStudent={handleUpdateStudent}
@@ -1857,6 +1879,7 @@ function App() {
             onNavigate={(page) => {
                if (page === 'input_setoran') {
                   setPreSelectedStudent(null);
+                  setInputSetoranReferrer(null);
                }
                if (page !== 'catatan') {
                   window.location.hash = '';
@@ -1907,6 +1930,7 @@ function App() {
                                 } else {
                                    if (tab.id === 'input_setoran') {
                                       setPreSelectedStudent(null);
+                                      setInputSetoranReferrer(null);
                                    }
                                    if (tab.id !== 'catatan') {
                                       window.location.hash = '';
