@@ -1220,6 +1220,11 @@ function App() {
                       setInputSetoranReferrer('riwayat');
                       setActivePage('input_setoran');
                    }}
+                   onViewProfile={(student) => {
+                      setProfileStudent(student);
+                      setProfileReferrer('riwayat');
+                      setActivePage('profil_siswa');
+                   }}
                    user={user}
                    onMenuClick={() => setIsSidebarOpen(true)}
                    notifications={notifications}

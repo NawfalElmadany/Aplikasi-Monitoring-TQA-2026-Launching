@@ -24,3 +24,6 @@ The following specialized skills have been installed under `.agents/skills/` and
 - **Cards**: Outer header cards must be styled as floating cards with a light gradient background (`bg-gradient-to-br from-white to-emerald-50/60`), subtle shadow (`shadow-[0_8px_30px_rgba(0,0,0,0.04)]`), and a green border (`border-emerald-400`).
 - **Margins & Alignment**: Always remove extra horizontal margins (`mx-`) from header cards. They must align perfectly with the parent page container (`p-4 sm:p-8`) to maintain a clean vertical grid line down the left and right edges.
 - **Header Structure**: Sapaan ("Assalamualaikum...") and date are exclusive to the main Dashboard page. Other pages must keep their header titles aligned vertically centered in the card relative to action buttons and the user profile.
+
+### 3. Git Operations & Workflow
+- **Git Push**: Do NOT execute `git push` automatically. Always wait for explicit instruction or approval from the user before pushing changes to remote repositories.
