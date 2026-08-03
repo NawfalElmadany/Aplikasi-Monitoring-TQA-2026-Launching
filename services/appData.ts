@@ -720,6 +720,8 @@ export const getAssignedTeacher = (name: string, studentClass: string, studentIn
       "JACINDA FATHIYYA BAHIRA PUTRI",
       "JADDA JAYYID ZIDANE",
       "MUHAMMAD AHNAF ALFARIZQY",
+      "M. AHNAF ALFARIZQY",
+      "SYANALA KANIA AYUNDA",
       "QAISHA AZZAHRA KUMARA",
       "QUEENA AURANISA ANNAFI"
     ];
