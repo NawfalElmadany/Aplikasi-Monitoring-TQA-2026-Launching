@@ -431,21 +431,17 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3 shrink-0">
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NILAI</p>
-                                                <p className="font-black text-slate-800 text-base">{log.score || log.lastScore || '-'}</p>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-extrabold ${
-                                                    log.status === 'Mumtaz' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                                    log.status === 'Perlu Bimbingan' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                                                    'bg-amber-50 text-amber-700 border border-amber-200'
-                                                }`}>
-                                                    {log.status === 'Mumtaz' ? <CheckCircle size={8} /> : <AlertCircle size={8} />}
-                                                    {log.status}
-                                                </span>
-                                            </div>
+                                        <div className="flex flex-col items-end justify-center shrink-0 min-w-[70px] text-right">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">NILAI</span>
+                                            <span className="font-black text-slate-800 text-base mt-1.5 leading-none">{log.score || log.lastScore || '-'}</span>
+                                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-extrabold mt-2 whitespace-nowrap border ${
+                                                log.status === 'Mumtaz' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                log.status === 'Perlu Bimbingan' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                'bg-amber-50 text-amber-700 border-amber-200'
+                                            }`}>
+                                                {log.status === 'Mumtaz' ? <CheckCircle size={8} /> : <AlertCircle size={8} />}
+                                                {log.status}
+                                            </span>
                                         </div>
                                     </div>
                                 ))
