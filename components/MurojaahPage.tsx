@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RotateCw, CheckCircle2, ChevronRight, Plus, Users, Save, X, BookOpen, StickyNote, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { MurojaahEntry, Student, User } from '../types';
 import { SURAHS_JUZ_29, SURAHS_JUZ_30 } from '../constants';
@@ -81,7 +81,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
         { id: "mock-j5", date: "28 Juni 2026", class: "6D", material: "Surah Al-Infitar (Ayat 1 - 19)" },
     ];
 
-    const [jurnalData, setJurnalData] = useState<{ id?: string | number; date: string; class: string; material: string }[]>(staticBase);
+    const [jurnalData, setJurnalData] = useState<{ id?: string | number; date: string; isoDate?: string; class: string; material: string }[]>(staticBase);
 
     const [deletedJurnalIds, setDeletedJurnalIds] = useState<string[]>(() => {
         const saved = localStorage.getItem('tqa_deleted_mock_murojaah_ids');
@@ -128,19 +128,10 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
             return !deletedJurnalIds.includes(String(entry.id));
         });
 
-        // Filter unique entries: only keep the last (most recent) entry per class
-        const latestByClass = allEntries.reduce((acc, entry) => {
-            const cls = entry.class;
-            if (!acc[cls] || entry.isoDate > acc[cls].isoDate) {
-                acc[cls] = entry;
-            }
-            return acc;
-        }, {} as Record<string, typeof allEntries[0]>);
+        // Sort all entries from latest to oldest date
+        const sortedAll = allEntries.sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
-        // Sort unique entries from latest to oldest date
-        const sortedUnique = Object.values(latestByClass).sort((a, b) => b.isoDate.localeCompare(a.isoDate));
-
-        setJurnalData(sortedUnique);
+        setJurnalData(sortedAll);
     }, [schedule, deletedJurnalIds]);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -152,6 +143,24 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
     const [endDate, setEndDate] = useState('');
 
 
+
+    const latestJurnalData = useMemo(() => {
+        const latestByClass = jurnalData.reduce((acc, entry) => {
+            const cls = entry.class;
+            const entryIso = entry.isoDate || parseIndonesianDateToYYYYMMDD(entry.date);
+            const accIso = acc[cls] ? (acc[cls].isoDate || parseIndonesianDateToYYYYMMDD(acc[cls].date)) : '';
+            if (!acc[cls] || entryIso > accIso) {
+                acc[cls] = entry;
+            }
+            return acc;
+        }, {} as Record<string, typeof jurnalData[0]>);
+
+        return Object.values(latestByClass).sort((a, b) => {
+            const aIso = a.isoDate || parseIndonesianDateToYYYYMMDD(a.date);
+            const bIso = b.isoDate || parseIndonesianDateToYYYYMMDD(b.date);
+            return bIso.localeCompare(aIso);
+        });
+    }, [jurnalData]);
 
     const handleEditClick = (idx: number, row: { date: string; class: string; material: string }) => {
         setSelectedJurnal({ index: idx, class: row.class, material: row.material });
@@ -165,6 +174,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
         const updatedData = [...jurnalData];
         updatedData[selectedJurnal.index] = {
             date: formatIndonesianDate(editDate),
+            isoDate: editDate,
             class: selectedJurnal.class,
             material: editMaterial
         };
@@ -253,6 +263,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                 : `${startSurah} s.d. ${endSurah}`;
             const newRow = {
                 date: formatIndonesianDate(murojaahDate),
+                isoDate: murojaahDate,
                 class: selectedClass,
                 material: `Surah ${newMaterial}`
             };
@@ -429,6 +440,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                                 
                                                 const newRow = {
                                                     date: formatIndonesianDate(murojaahDate),
+                                                    isoDate: murojaahDate,
                                                     class: selectedClass,
                                                     material: `Surah ${newMaterial}`
                                                 };
@@ -831,7 +843,7 @@ const MurojaahPage: React.FC<MurojaahPageProps> = ({
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-[#1A2E24] text-sm">
-                                                {jurnalData.map((row, idx) => (
+                                                {latestJurnalData.map((row, idx) => (
                                                     <tr 
                                                         key={idx} 
                                                         onClick={() => setViewingClass(row.class)}
