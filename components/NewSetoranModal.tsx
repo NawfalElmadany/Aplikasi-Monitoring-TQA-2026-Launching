@@ -480,7 +480,7 @@ const NewSetoranModal: React.FC<NewSetoranModalProps> = ({ isOpen, onClose, stud
                                             <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">Halaman</label>
                                             <div className="flex items-center gap-3">
                                                 <input
-                                                    type="text"
+                                                    type="number"
                                                     placeholder="Mulai"
                                                     value={formData.page}
                                                     onChange={(e) => setFormData({ ...formData, page: e.target.value })}
@@ -488,7 +488,7 @@ const NewSetoranModal: React.FC<NewSetoranModalProps> = ({ isOpen, onClose, stud
                                                 />
                                                 <span className="text-gray-300">-</span>
                                                 <input
-                                                    type="text"
+                                                    type="number"
                                                     placeholder="Akhir"
                                                     value={formData.pageEnd}
                                                     onChange={(e) => setFormData({ ...formData, pageEnd: e.target.value })}

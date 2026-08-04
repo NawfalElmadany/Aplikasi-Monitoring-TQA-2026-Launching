@@ -511,7 +511,7 @@ const EditSetoranModal: React.FC<EditSetoranModalProps> = ({ isOpen, onClose, lo
                                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Halaman</label>
                                     <div className="flex items-center gap-3">
                                         <input
-                                            type="text"
+                                            type="number"
                                             placeholder="Mulai"
                                             value={formData.page}
                                             onChange={(e) => setFormData({ ...formData, page: e.target.value })}
@@ -519,7 +519,7 @@ const EditSetoranModal: React.FC<EditSetoranModalProps> = ({ isOpen, onClose, lo
                                         />
                                         <span className="text-slate-300 dark:text-white/20">-</span>
                                         <input
-                                            type="text"
+                                            type="number"
                                             placeholder="Akhir"
                                             value={formData.pageEnd}
                                             onChange={(e) => setFormData({ ...formData, pageEnd: e.target.value })}

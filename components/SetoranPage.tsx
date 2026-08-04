@@ -825,14 +825,14 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                                             <label className="text-xs font-bold text-slate-400 dark:text-[#6B8578] uppercase tracking-widest mb-3 block ml-1">Halaman</label>
                                                             <div className="grid grid-cols-2 gap-4 w-full">
                                                                 <input
-                                                                    type="text"
+                                                                    type="number"
                                                                     placeholder="Mulai"
                                                                     value={formData.page}
                                                                     onChange={(e) => setFormData({ ...formData, page: e.target.value })}
                                                                     className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-[#0C1A13] border border-slate-200 dark:border-[#1E382B] focus:bg-white dark:focus:bg-[#112119] focus:border-emerald-500 outline-none text-center font-bold text-slate-800 dark:text-[#E2EAE5] transition-all placeholder:text-slate-400 dark:placeholder-[#6B8578]"
                                                                 />
                                                                 <input
-                                                                    type="text"
+                                                                    type="number"
                                                                     placeholder="Akhir"
                                                                     value={formData.pageEnd}
                                                                     onChange={(e) => setFormData({ ...formData, pageEnd: e.target.value })}
