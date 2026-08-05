@@ -143,17 +143,37 @@ const EditSetoranModal: React.FC<EditSetoranModalProps> = ({ isOpen, onClose, lo
                     level = parseInt(jilidMatch[1]);
                 }
                 
-                const halMatch = cleanSurah.match(/Hal\.\s*(\d+)(?:-(\d+))?/i);
-                if (halMatch) {
-                    pStart = halMatch[1] || '';
-                    pEnd = halMatch[2] || '';
+                if (log.page) {
+                    if (log.page.includes('-')) {
+                        const parts = log.page.split('-');
+                        pStart = parts[0].trim();
+                        pEnd = parts[1].trim();
+                    } else {
+                        pStart = log.page;
+                    }
+                } else {
+                    const halMatch = cleanSurah.match(/Hal\.\s*(\d+)(?:-(\d+))?/i);
+                    if (halMatch) {
+                        pStart = halMatch[1] || '';
+                        pEnd = halMatch[2] || '';
+                    }
                 }
             } else if (type === 'Tartili' && material === 'Gharib') {
                 let cleanSurah = rawSurah;
-                const halMatch = cleanSurah.match(/Hal\.\s*(\d+)(?:-(\d+))?/i);
-                if (halMatch) {
-                    pStart = halMatch[1] || '';
-                    pEnd = halMatch[2] || '';
+                if (log.page) {
+                    if (log.page.includes('-')) {
+                        const parts = log.page.split('-');
+                        pStart = parts[0].trim();
+                        pEnd = parts[1].trim();
+                    } else {
+                        pStart = log.page;
+                    }
+                } else {
+                    const halMatch = cleanSurah.match(/Hal\.\s*(\d+)(?:-(\d+))?/i);
+                    if (halMatch) {
+                        pStart = halMatch[1] || '';
+                        pEnd = halMatch[2] || '';
+                    }
                 }
             }
             

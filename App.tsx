@@ -393,6 +393,9 @@ function App() {
       const nextStudent = { ...existingStudent, ...updateData };
 
       setStudents(prev => prev.map(student => student.id === id ? nextStudent : student));
+      if (profileStudent && profileStudent.id === id) {
+         setProfileStudent(nextStudent);
+      }
 
       // Log setoran entry locally in localStorage for integrated reporting
       const logEntry = {
@@ -427,6 +430,9 @@ function App() {
          } catch (error: any) {
             // Rollback local state if remote write fails
             setStudents(prev => prev.map(student => student.id === id ? existingStudent : student));
+            if (profileStudent && profileStudent.id === id) {
+               setProfileStudent(existingStudent);
+            }
             console.error('Failed to save student:', error);
             alert(`Perubahan siswa gagal disimpan ke Supabase: ${error?.message || error}`);
             return;
@@ -454,6 +460,9 @@ function App() {
       const nextStudent = { ...existingStudent, requiresAttention: false };
 
       setStudents(prev => prev.map(student => student.id === id ? nextStudent : student));
+      if (profileStudent && profileStudent.id === id) {
+         setProfileStudent(nextStudent);
+      }
 
       if (isSupabaseConfigured) {
          void saveStudent(nextStudent).catch((error) => {
@@ -552,6 +561,9 @@ function App() {
 
        const nextStudent = { ...existingStudent, ...updatedData };
        setStudents(prev => prev.map(s => s.id === studentId ? nextStudent : s));
+       if (profileStudent && profileStudent.id === studentId) {
+          setProfileStudent(nextStudent);
+       }
 
        if (isSupabaseConfigured) {
           try {
@@ -559,6 +571,9 @@ function App() {
           } catch (error: any) {
              // Rollback
              setStudents(prev => prev.map(s => s.id === studentId ? existingStudent : s));
+             if (profileStudent && profileStudent.id === studentId) {
+                setProfileStudent(existingStudent);
+             }
              console.error('Failed to update student:', error);
              alert(`Gagal menyimpan perubahan siswa ke database: ${error?.message || error}`);
           }

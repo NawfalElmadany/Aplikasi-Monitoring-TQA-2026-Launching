@@ -21,7 +21,7 @@ interface StudentProfilePageProps {
 
 
 const StudentProfilePage: React.FC<StudentProfilePageProps> = ({ 
-    student, 
+    student: propStudent, 
     students = [], 
     user,
     onMenuClick,
@@ -32,6 +32,11 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
     onInputSetoran,
     onUpdateStudent
 }) => {
+    const student = useMemo(() => {
+        if (!propStudent) return null;
+        return students.find(s => s.id === propStudent.id) || propStudent;
+    }, [propStudent, students]);
+
     const [logs, setLogs] = useState<any[]>([]);
     const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'tahfidz' | 'tartili' | 'kehadiran'>(() => {
@@ -614,7 +619,7 @@ const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
                                 <BookOpen size={16} className="text-emerald-600 dark:text-emerald-500" />
                                 <span>Capaian: {student.currentSurah}</span>
                             </div>
-                            {student.type === 'Tartili' && student.page && (
+                            {(student.type === 'Tartili' || student.currentSurah?.toLowerCase().includes('jilid') || student.currentSurah?.toLowerCase().includes('iqra') || student.currentSurah?.toLowerCase().includes('tartili') || student.currentSurah?.toLowerCase().includes('gharib')) && student.page && student.page !== '-' && (
                                 <div className="flex items-center gap-1.5">
                                     <Award size={16} className="text-emerald-600 dark:text-emerald-400" />
                                     <span>Halaman: {student.page}</span>

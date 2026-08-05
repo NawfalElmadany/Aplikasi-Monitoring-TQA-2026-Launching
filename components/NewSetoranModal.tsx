@@ -161,7 +161,7 @@ const NewSetoranModal: React.FC<NewSetoranModalProps> = ({ isOpen, onClose, stud
             displayString = `Drill Munaqosah Juz ${formData.currentJuz}: ${formData.drillStartSurah} - ${formData.drillEndSurah}`;
             finalPageString = '';
         } else if (isDrillTartili) {
-            displayString = `Drill Tartili Jilid ${formData.iqraLevel} Hal. ${finalPageString}`;
+            displayString = `Drill Tartili Jilid ${formData.iqraLevel}`;
         } else if (isQuranInput) {
             if (formData.verseStart && formData.verseEnd) {
                 displayString = `${formData.selectedSurah}: ${formData.verseStart}-${formData.verseEnd}`;
@@ -179,6 +179,7 @@ const NewSetoranModal: React.FC<NewSetoranModalProps> = ({ isOpen, onClose, stud
 
         onSave(selectedStudent.id, {
             type: (setoranType === 'Drill Munaqosah' || setoranType === 'Drill Tartili') ? selectedStudent.type : setoranType,
+            jenisSetoran: (setoranType === 'Drill Munaqosah' || setoranType === 'Drill Tartili') ? 'Drill' : 'Lanjut',
             currentJuz: (isQuranInput || setoranType === 'Drill Munaqosah') ? formData.currentJuz : undefined,
             currentSurah: displayString,
             iqraLevel: isJilidInput ? formData.iqraLevel : undefined,
