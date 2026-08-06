@@ -458,6 +458,21 @@ export const loadSetoranLogs = async (date: string, className: string): Promise<
   return (data ?? []).map(mapSetoranLogFromRow);
 };
 
+export const loadClassSetoranLogs = async (className: string): Promise<any[]> => {
+  const client = ensureSupabase();
+  const { data, error } = await client
+    .from('setoran')
+    .select('*')
+    .eq('class_name', className)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapSetoranLogFromRow);
+};
+
 export const loadStudentSetoranLogs = async (studentId: string): Promise<any[]> => {
   const client = ensureSupabase();
   const { data, error } = await client

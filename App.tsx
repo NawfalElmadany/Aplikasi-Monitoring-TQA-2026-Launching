@@ -38,7 +38,7 @@ const GharibPage = lazy(() => import('./components/GharibPage'));
 import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
 import { useToast } from './context/ToastContext';
 
@@ -75,6 +75,47 @@ function App() {
          setGlobalToastShow(false);
       }, 3000);
    };
+
+   const [setoranLogsState, setSetoranLogsState] = useState<any[]>([]);
+   const [isLoadingLaporanLogs, setIsLoadingLaporanLogs] = useState(false);
+
+   useEffect(() => {
+      let isMounted = true;
+      if (activePage !== 'laporan') return;
+
+      const fetchLogs = async () => {
+         setIsLoadingLaporanLogs(true);
+         try {
+            if (isSupabaseConfigured) {
+               const logs = await loadClassSetoranLogs(reportClass);
+               if (isMounted) {
+                  setSetoranLogsState(logs);
+               }
+            } else {
+               const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+               if (isMounted) {
+                  setSetoranLogsState(localLogs);
+               }
+            }
+         } catch (error) {
+            console.error('Failed to fetch setoran logs for report:', error);
+            const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            if (isMounted) {
+               setSetoranLogsState(localLogs);
+            }
+         } finally {
+            if (isMounted) {
+               setIsLoadingLaporanLogs(false);
+            }
+         }
+      };
+
+      void fetchLogs();
+
+      return () => {
+         isMounted = false;
+      };
+   }, [activePage, reportClass, isSupabaseConfigured, students]);
 
    const isSidebarOpen = isSidebarOpenState;
    const setIsSidebarOpen = (open: boolean | ((prev: boolean) => boolean)) => {
@@ -1409,15 +1450,8 @@ function App() {
                "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim"
             ];
 
-            // Load real setoran logs from localStorage
-            const setoranLogs = (() => {
-               try {
-                  return JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
-               } catch (e) {
-                  console.error('Failed to parse setoran logs:', e);
-                  return [];
-               }
-            })();
+            // Load real setoran logs
+            const setoranLogs = setoranLogsState;
 
             const reportData = studentsInReportClass.map(student => {
                // Use deterministic seed based on month and student for mock consistency
@@ -1728,8 +1762,17 @@ function App() {
                                      <th className="px-6 py-4 text-center sticky top-0 z-10 bg-gray-50 shadow-[inset_0_-2px_0_rgba(229,231,235,0.5)]">Gharib</th>
                                   </tr>
                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                   {reportData.map((student: any, idx) => {
+                                 <tbody className="divide-y divide-gray-100">
+                                    {isLoadingLaporanLogs ? (
+                                       <tr>
+                                          <td colSpan={9} className="py-12 text-center text-slate-500 font-medium">
+                                             <div className="flex items-center justify-center gap-2.5">
+                                                <span className="h-4 w-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin"></span>
+                                                <span>Memuat data laporan dari database...</span>
+                                             </div>
+                                          </td>
+                                       </tr>
+                                    ) : reportData.map((student: any, idx) => {
                                       // Determine teacher color based on index
                                       const teacherInfo = getAssignedTeacher(student.name, student.class, idx);
                                       const badgeColor = teacherInfo.name.includes('Nawfal') 
@@ -1776,7 +1819,7 @@ function App() {
                                 </tbody>
                             </table>
                          </div>
-                         {reportData.length === 0 && (
+                         {!isLoadingLaporanLogs && reportData.length === 0 && (
                             <div className="p-12 text-center text-gray-500">
                                Tidak ada data siswa untuk kelas ini.
                             </div>
