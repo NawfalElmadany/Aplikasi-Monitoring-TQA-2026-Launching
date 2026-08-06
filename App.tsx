@@ -591,11 +591,15 @@ function App() {
       }
    };
 
-   const handleUpdateUser = (data: Partial<User>) => {
-      if (user) {
-         setUser({ ...user, ...data });
-      }
-   };
+    const handleUpdateUser = (data: Partial<User>) => {
+       if (user) {
+          const nextUser = { ...user, ...data };
+          setUser(nextUser);
+          if (nextUser.role === 'teacher' && data.avatar) {
+             localStorage.setItem('tqa_teacher_avatar', data.avatar);
+          }
+       }
+    };
 
     const handleUpdateStudent = async (studentId: string, updatedData: Partial<Student>) => {
        const existingStudent = students.find((s) => s.id === studentId);

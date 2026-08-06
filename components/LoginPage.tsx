@@ -131,10 +131,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
           return;
         }
 
+        const savedTeacherAvatar = localStorage.getItem('tqa_teacher_avatar');
         mockUser = {
           name: 'Ustadz/zah TQA Kelas 5&6',
           role: 'teacher',
-          avatar: 'https://picsum.photos/seed/ustadz/100/100'
+          avatar: savedTeacherAvatar || 'https://picsum.photos/seed/ustadz/100/100'
         };
       } else {
         // Find selected student details
