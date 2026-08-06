@@ -1556,18 +1556,25 @@ function App() {
                 const tartiliLogs = studentLogs.filter((log: any) => log.type === 'Tartili' && (!log.currentSurah || !log.currentSurah.includes('Gharib')));
                 const tartiliLanjutLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
 
-                if (tartiliLanjutLogs.length > 0) {
-                   const firstLog = tartiliLanjutLogs[0];
-                   const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
-                   
-                   const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
-                   const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
-                   const firstPage = firstLog.page || "1";
-                   const lastPage = lastLog.page || "1";
-                   
-                   tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
-                   tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
-                } else {
+                 if (tartiliLanjutLogs.length > 0) {
+                    const firstLog = tartiliLanjutLogs[0];
+                    const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
+                    
+                    const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
+                    const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
+                    let firstPage = firstLog.page || "1";
+                    let lastPage = lastLog.page || "1";
+                    
+                    if (firstPage.includes('-')) {
+                       firstPage = firstPage.split('-')[0].trim();
+                    }
+                    if (lastPage.includes('-')) {
+                       lastPage = lastPage.split('-').pop()?.trim() || lastPage;
+                    }
+                    
+                    tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
+                    tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
+                 } else {
                    tartiliStart = "-";
                    tartiliEnd = "-";
                 }
