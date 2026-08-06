@@ -16,6 +16,58 @@ interface MonitoringPageProps {
     onSearchClick?: () => void;
 }
 
+const getActiveClassAtTime = (): string | null => {
+    const now = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const dayName = days[now.getDay()];
+    
+    const schedules: Record<string, Array<{ className: string; start: string; end: string }>> = {
+        'Senin': [
+            { className: '5C', start: '07:30', end: '08:40' },
+            { className: '6D', start: '08:40', end: '09:50' },
+            { className: '6C', start: '10:05', end: '11:15' },
+            { className: '5D', start: '11:15', end: '12:25' },
+            { className: '5B', start: '13:10', end: '13:45' }
+        ],
+        'Selasa': [
+            { className: '6C', start: '07:30', end: '08:40' },
+            { className: '5B', start: '08:40', end: '09:50' },
+            { className: '5C', start: '10:05', end: '11:15' },
+            { className: '6D', start: '13:10', end: '13:45' },
+            { className: '5D', start: '13:45', end: '14:55' }
+        ],
+        'Rabu': [
+            { className: '5B', start: '07:30', end: '08:40' },
+            { className: '5C', start: '10:05', end: '11:15' },
+            { className: '6D', start: '11:15', end: '12:25' },
+            { className: '6C', start: '13:10', end: '13:45' },
+            { className: '5D', start: '13:45', end: '14:55' }
+        ],
+        'Kamis': [
+            { className: '5B', start: '08:40', end: '09:50' },
+            { className: '6C', start: '10:05', end: '11:15' },
+            { className: '6D', start: '11:15', end: '12:25' },
+            { className: '5C', start: '13:10', end: '13:45' },
+            { className: '5D', start: '14:20', end: '14:55' }
+        ]
+    };
+
+    const daySchedules = schedules[dayName];
+    if (!daySchedules) return null;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const active = daySchedules.find((schedule) => {
+        const [startH, startM] = schedule.start.split(':').map(Number);
+        const [endH, endM] = schedule.end.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        return currentMinutes >= (startMinutes - 10) && currentMinutes <= endMinutes;
+    });
+
+    return active ? active.className : null;
+};
+
 const MonitoringPage: React.FC<MonitoringPageProps> = ({ 
     students, 
     onQuickInput,
@@ -26,7 +78,11 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     onDismissNotification,
     onSearchClick
 }) => {
+    const [hasManuallySelected, setHasManuallySelected] = useState(false);
+
     const [selectedClass, setSelectedClass] = useState<string>(() => {
+        const active = getActiveClassAtTime();
+        if (active) return active;
         return localStorage.getItem('tqa_monitoring_selected_class') || 'Semua';
     });
     const [selectedTeacher, setSelectedTeacher] = useState<string>(() => {
@@ -46,6 +102,8 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
 
     // Active filters used for rendering the list (to prevent instant switches before fade transitions)
     const [activeClass, setActiveClass] = useState<string>(() => {
+        const active = getActiveClassAtTime();
+        if (active) return active;
         return localStorage.getItem('tqa_monitoring_selected_class') || 'Semua';
     });
     const [activeDate, setActiveDate] = useState<string>(() => {
@@ -68,6 +126,38 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
     useEffect(() => {
         localStorage.setItem('tqa_monitoring_selected_date', selectedDate);
     }, [selectedDate]);
+
+    const handleClassSelect = (cls: string) => {
+        setHasManuallySelected(true);
+        setSelectedClass(cls);
+    };
+
+    const handleDateChange = (dateVal: string) => {
+        setHasManuallySelected(false);
+        setSelectedDate(dateVal);
+    };
+
+    // Auto-select active class based on schedule
+    useEffect(() => {
+        const d = new Date();
+        const offset = d.getTimezoneOffset();
+        const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+        const todayStr = localDate.toISOString().slice(0, 10);
+
+        const checkActiveClass = () => {
+            if (selectedDate === todayStr && !hasManuallySelected) {
+                const active = getActiveClassAtTime();
+                if (active && selectedClass !== active) {
+                    setSelectedClass(active);
+                    setActiveClass(active);
+                }
+            }
+        };
+
+        checkActiveClass();
+        const intervalId = setInterval(checkActiveClass, 30000); // Check every 30s
+        return () => clearInterval(intervalId);
+    }, [selectedDate, hasManuallySelected, selectedClass]);
 
     const [logs, setLogs] = useState<any[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -356,7 +446,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                                 <input
                                     type="date"
                                     value={selectedDate}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    onChange={(e) => handleDateChange(e.target.value)}
                                     className="w-full pl-4 pr-4 py-2.5 rounded-2xl border border-slate-200 font-bold text-slate-700 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm h-[48px] shadow-sm transition-all"
                                 />
                             </div>
@@ -376,7 +466,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                     {classes.map((cls) => (
                         <button
                             key={cls}
-                            onClick={() => setSelectedClass(cls)}
+                            onClick={() => handleClassSelect(cls)}
                             className={`
                                 px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap
                                 ${selectedClass === cls
