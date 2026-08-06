@@ -76,46 +76,6 @@ function App() {
       }, 3000);
    };
 
-   const [setoranLogsState, setSetoranLogsState] = useState<any[]>([]);
-   const [isLoadingLaporanLogs, setIsLoadingLaporanLogs] = useState(false);
-
-   useEffect(() => {
-      let isMounted = true;
-      if (activePage !== 'laporan') return;
-
-      const fetchLogs = async () => {
-         setIsLoadingLaporanLogs(true);
-         try {
-            if (isSupabaseConfigured) {
-               const logs = await loadClassSetoranLogs(reportClass);
-               if (isMounted) {
-                  setSetoranLogsState(logs);
-               }
-            } else {
-               const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
-               if (isMounted) {
-                  setSetoranLogsState(localLogs);
-               }
-            }
-         } catch (error) {
-            console.error('Failed to fetch setoran logs for report:', error);
-            const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
-            if (isMounted) {
-               setSetoranLogsState(localLogs);
-            }
-         } finally {
-            if (isMounted) {
-               setIsLoadingLaporanLogs(false);
-            }
-         }
-      };
-
-      void fetchLogs();
-
-      return () => {
-         isMounted = false;
-      };
-   }, [activePage, reportClass, isSupabaseConfigured, students]);
 
    const isSidebarOpen = isSidebarOpenState;
    const setIsSidebarOpen = (open: boolean | ((prev: boolean) => boolean)) => {
@@ -280,6 +240,47 @@ function App() {
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
    });
+
+   const [setoranLogsState, setSetoranLogsState] = useState<any[]>([]);
+   const [isLoadingLaporanLogs, setIsLoadingLaporanLogs] = useState(false);
+
+   useEffect(() => {
+      let isMounted = true;
+      if (activePage !== 'laporan') return;
+
+      const fetchLogs = async () => {
+         setIsLoadingLaporanLogs(true);
+         try {
+            if (isSupabaseConfigured) {
+               const logs = await loadClassSetoranLogs(reportClass);
+               if (isMounted) {
+                  setSetoranLogsState(logs);
+               }
+            } else {
+               const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+               if (isMounted) {
+                  setSetoranLogsState(localLogs);
+               }
+            }
+         } catch (error) {
+            console.error('Failed to fetch setoran logs for report:', error);
+            const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+            if (isMounted) {
+               setSetoranLogsState(localLogs);
+            }
+         } finally {
+            if (isMounted) {
+               setIsLoadingLaporanLogs(false);
+            }
+         }
+      };
+
+      void fetchLogs();
+
+      return () => {
+         isMounted = false;
+      };
+   }, [activePage, reportClass, isSupabaseConfigured, students]);
 
    // Notifications
    const notifications = students.filter(s => s.requiresAttention);
