@@ -314,12 +314,11 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
             if (supabase) {
                 try {
-                    // Try user's requested query on gharib_klasikal
                     const { data, error } = await supabase
-                        .from('gharib_klasikal')
+                        .from('jurnal_gharib')
                         .select('*')
-                        .eq('kelas_id', kelasId)
-                        .order('tanggal', { ascending: false })
+                        .eq('kelas', kelasId)
+                        .order('created_at', { ascending: false })
                         .limit(1)
                         .maybeSingle();
 
@@ -327,26 +326,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                         dbData = data;
                     }
                 } catch (e) {
-                    console.error('Failed to query gharib_klasikal from Supabase:', e);
-                }
-
-                if (!dbData) {
-                    try {
-                        // Fallback to actual schema table: jurnal_gharib
-                        const { data, error } = await supabase
-                            .from('jurnal_gharib')
-                            .select('*')
-                            .eq('class_name', kelasId)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .maybeSingle();
-
-                        if (!error && data) {
-                            dbData = data;
-                        }
-                    } catch (e) {
-                        console.error('Failed to query jurnal_gharib from Supabase:', e);
-                    }
+                    console.error('Failed to query jurnal_gharib from Supabase:', e);
                 }
             }
 
