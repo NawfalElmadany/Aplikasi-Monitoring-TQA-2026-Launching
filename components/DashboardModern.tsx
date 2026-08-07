@@ -238,56 +238,46 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
         const fetchData = async () => {
             if (supabase) {
-                // 1. Fetch Murojaah from Supabase
+                // Fetch classical murojaah from murojaah_entries table
                 try {
                     const { data, error } = await supabase
-                        .from('setoran_hafalan')
+                        .from('murojaah_entries')
                         .select('*')
-                        .eq('kelas_id', targetClassId)
-                        .eq('jenis', 'murojaah')
-                        .order('tanggal', { ascending: false })
+                        .eq('class_name', targetClassId)
+                        .eq('type', 'classical')
+                        .order('entry_date', { ascending: false })
                         .limit(1)
                         .maybeSingle();
 
                     if (!error && data) {
                         setLastMurojaah({
-                            class: data.kelas_id,
-                            surah: data.detail_ayat || data.current_surah || data.material || 'Setoran Murojaah'
+                            class: data.class_name,
+                            surah: data.surah.startsWith('Surah ') ? data.surah : `Surah ${data.surah}`
                         });
-                    } else {
-                        // Fallback to actual schema table: setoran
-                        const { data: realData, error: realError } = await supabase
-                            .from('setoran')
-                            .select('*')
-                            .eq('class_name', targetClassId)
-                            .eq('type', 'Hafalan')
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .maybeSingle();
-                        
-                        if (!realError && realData) {
-                            setLastMurojaah({
-                                class: realData.class_name,
-                                surah: realData.current_surah
-                            });
-                        }
+                        return;
                     }
                 } catch (e) {
-                    console.error('Failed to query setoran_hafalan/setoran:', e);
+                    console.error('Failed to query murojaah_entries:', e);
                 }
             }
 
-            // Fallback to localStorage logs if supabase is offline or returned empty
+            // Fallback to localStorage mock data or local logs if supabase is offline/empty
             setLastMurojaah(prev => {
                 if (prev) return prev;
                 try {
-                    const logs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
-                    const classLogs = logs.filter((l: any) => l.class === targetClassId && l.type === 'Hafalan');
-                    const lastHafalan = classLogs.sort((a: any, b: any) => b.date.localeCompare(a.date))[0];
-                    if (lastHafalan) {
+                    const deletedIds = JSON.parse(localStorage.getItem('tqa_deleted_mock_murojaah_ids') || '[]');
+                    const staticBase = [
+                        { id: "mock-j1", date: "30 Juni 2026", class: "5B", material: "Surah An-Naba (Ayat 1 - 40)" },
+                        { id: "mock-j2", date: "30 Juni 2026", class: "5C", material: "Surah An-Nazi'at (Ayat 1 - 46)" },
+                        { id: "mock-j3", date: "29 Juni 2026", class: "5D", material: "Surah 'Abasa (Ayat 1 - 42)" },
+                        { id: "mock-j4", date: "29 Juni 2026", class: "6C", material: "Surah At-Takwir (Ayat 1 - 29)" },
+                        { id: "mock-j5", date: "28 Juni 2026", class: "6D", material: "Surah Al-Infitar (Ayat 1 - 19)" },
+                    ].filter(item => item.class === targetClassId && !deletedIds.includes(item.id));
+
+                    if (staticBase.length > 0) {
                         return {
-                            class: lastHafalan.class,
-                            surah: lastHafalan.currentSurah
+                            class: staticBase[0].class,
+                            surah: staticBase[0].material
                         };
                     }
                 } catch (e) {
