@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, User, Search, Award, ClipboardCheck, Clock, Trash2, Edit, CheckCircle, XCircle, Plus, Users, BookOpen } from 'lucide-react';
 import { Student, User as UserType, UjianTartiliEntry } from '../types';
 import Header from './Header';
@@ -53,6 +53,7 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
     const [formSearchQuery, setFormSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [formJilidAsal, setFormJilidAsal] = useState<number>(1);
 
     // Selected student memo
     const selectedStudent = useMemo(() => {
@@ -60,6 +61,13 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
     }, [students, selectedStudentId]);
 
     const displaySearchVal = isFocused ? formSearchQuery : (selectedStudent ? selectedStudent.name : formSearchQuery);
+
+    // Auto-update Jilid selection when selectedStudent changes
+    useEffect(() => {
+        if (selectedStudent) {
+            setFormJilidAsal(selectedStudent.iqraLevel || 1);
+        }
+    }, [selectedStudent]);
 
     // Filters state
     const [classFilter, setClassFilter] = useState('Semua');
@@ -183,7 +191,7 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
 
         setIsSaving(true);
         try {
-            const currentJilid = student.iqraLevel || 1;
+            const currentJilid = formJilidAsal;
             const targetJilidStr = currentJilid === 6 ? "Al-Qur'an" : `Jilid ${currentJilid + 1}`;
 
             if (editingEntry) {
@@ -235,6 +243,7 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
         setJamPelajaran('');
         setNotes('');
         setFormSearchQuery('');
+        setFormJilidAsal(1);
         setEditingEntry(null);
     };
 
@@ -250,6 +259,7 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
         setFormClassFilter(student.class);
         setSelectedStudentId(student.id);
         setFormSearchQuery(student.name);
+        setFormJilidAsal(student.iqraLevel || 1);
         setEditingEntry(null);
         // Auto select date if today is teaching day
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -276,6 +286,7 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
         
         setSelectedStudentId(entry.studentId);
         setFormSearchQuery(entry.studentName);
+        setFormJilidAsal(entry.jilidAsal);
         setHariUjian(entry.hariUjian);
         setTanggalUjian(entry.tanggalUjian);
         setJamPelajaran(entry.jamPelajaran);
@@ -573,6 +584,24 @@ const UjianTartiliPage: React.FC<UjianTartiliPageProps> = ({
                                             )}
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Materi Ujian (Kenaikan Jilid) */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-bold text-slate-450 uppercase tracking-wider">Materi Ujian (Kenaikan Jilid)</label>
+                                    <select
+                                        value={formJilidAsal}
+                                        onChange={(e) => setFormJilidAsal(Number(e.target.value))}
+                                        className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#09120E] border border-slate-200 dark:border-[#1A2E24] text-slate-800 dark:text-white text-sm rounded-xl outline-none focus:ring-1 focus:ring-emerald-500 font-medium cursor-pointer"
+                                        required
+                                    >
+                                        <option value={1}>Jilid 1 ➜ Jilid 2</option>
+                                        <option value={2}>Jilid 2 ➜ Jilid 3</option>
+                                        <option value={3}>Jilid 3 ➜ Jilid 4</option>
+                                        <option value={4}>Jilid 4 ➜ Jilid 5</option>
+                                        <option value={5}>Jilid 5 ➜ Jilid 6</option>
+                                        <option value={6}>Jilid 6 ➜ Al-Qur'an</option>
+                                    </select>
                                 </div>
 
                                 {/* Hari & Tanggal */}
