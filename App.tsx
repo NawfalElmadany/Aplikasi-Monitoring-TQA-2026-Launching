@@ -1,7 +1,7 @@
 import { getAvatarUrl } from './utils/avatar';
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import logoUrl from './assets/logo.png';
-import { BookOpen, FileText, Calendar, ChevronDown, AlertCircle, Activity, Plus, Download, CheckCircle2, LayoutDashboard, Users, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, Menu, LogOut, MessageSquare } from 'lucide-react';
+import { BookOpen, FileText, Calendar, ChevronDown, AlertCircle, Activity, Plus, Download, CheckCircle2, LayoutDashboard, Users, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, Menu, LogOut, MessageSquare, ClipboardCheck } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import StudentList from './components/StudentList';
@@ -220,7 +220,7 @@ function App() {
             return;
          }
          const data = await response.json();
-         const currentVersion = '1.0.1'; 
+         const currentVersion = '1.0.2'; 
          if (data.version !== currentVersion) {
             setIsUpdateAvailable(true);
             if (manual) triggerGlobalToast('Pembaruan aplikasi tersedia!');
@@ -2026,6 +2026,7 @@ function App() {
              { id: 'gharib', label: 'Gharib', icon: BookOpen },
              { id: 'santri', label: 'Data Siswa', icon: Users },
              { id: 'riwayat', label: 'Monitoring', icon: History },
+             { id: 'ujian_tartili', label: 'Ujian Tartili', icon: ClipboardCheck },
              { id: 'laporan', label: 'Laporan', icon: FileText },
              { id: 'absensi', label: 'Absensi', icon: FileText },
              { id: 'settings', label: 'Settings', icon: Settings },
