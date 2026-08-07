@@ -127,5 +127,21 @@ export interface TartiliEntry {
   createdAt?: string;
 }
 
+export interface UjianTartiliEntry {
+  id: string | number;
+  studentId: string;
+  studentName: string;
+  className: string;
+  jilidAsal: number;
+  targetJilid: string;
+  hariUjian: string;
+  tanggalUjian: string;
+  jamPelajaran: string;
+  penguji: string;
+  status: 'Terjadwal' | 'Selesai' | 'Batal';
+  notes?: string;
+  createdAt?: string;
+}
+
 
 

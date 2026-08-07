@@ -131,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activePage, onNaviga
             return ['dashboard', 'hafalan', 'tartili', 'catatan', 'absensi', 'profil'].includes(item.id);
         }
         // Guru-only menu items
-        return ['dashboard', 'input_setoran', 'murojaah', 'tartili', 'gharib', 'santri', 'riwayat', 'catatan', 'laporan', 'settings', 'absensi'].includes(item.id);
+        return ['dashboard', 'input_setoran', 'murojaah', 'tartili', 'gharib', 'santri', 'riwayat', 'ujian_tartili', 'catatan', 'laporan', 'settings', 'absensi'].includes(item.id);
     });
 
     const handleLogoutClick = () => {

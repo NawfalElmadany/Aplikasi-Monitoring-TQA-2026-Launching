@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Student, Note, MurojaahEntry, GharibEntry, AcademicYear, Target, Teacher } from '../types';
+import { Student, Note, MurojaahEntry, GharibEntry, AcademicYear, Target, Teacher, UjianTartiliEntry } from '../types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from '../constants';
 import {
   loadStudents, saveStudent, loadNotes, saveNote, deleteNote,
   loadMurojaahEntries, createMurojaahEntry, deleteMurojaahEntry,
   loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry,
   loadAppSettings, saveAppSettings, seedStudents, seedNotes, seedMurojaahEntries,
-  createSetoranLog, deleteStudent
+  createSetoranLog, deleteStudent,
+  loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry
 } from '../services/appData';
 import { useToast } from '../context/ToastContext';
 
@@ -16,6 +17,7 @@ export function useTqaData() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [murojaahEntries, setMurojaahEntries] = useState<MurojaahEntry[]>([]);
   const [gharibEntries, setGharibEntries] = useState<GharibEntry[]>([]);
+  const [ujianTartiliEntries, setUjianTartiliEntries] = useState<UjianTartiliEntry[]>([]);
   const [academicYear, setAcademicYear] = useState<AcademicYear>(DEFAULT_ACADEMIC_YEAR);
   const [targets, setTargets] = useState<Target[]>(DEFAULT_TARGETS);
   const [teachers, setTeachers] = useState<Teacher[]>(DEFAULT_TEACHERS);
@@ -30,12 +32,13 @@ export function useTqaData() {
     async function initData() {
       try {
         setIsAppLoading(true);
-        const [loadedStudents, loadedNotes, loadedMurojaah, loadedGharib, loadedSettings] = await Promise.all([
+        const [loadedStudents, loadedNotes, loadedMurojaah, loadedGharib, loadedSettings, loadedUjian] = await Promise.all([
           loadStudents(),
           loadNotes(),
           loadMurojaahEntries(),
           loadGharibEntries(),
-          loadAppSettings()
+          loadAppSettings(),
+          loadUjianTartiliEntries()
         ]);
 
         if (!isMounted) return;
@@ -44,6 +47,7 @@ export function useTqaData() {
         setNotes(loadedNotes);
         setMurojaahEntries(loadedMurojaah);
         setGharibEntries(loadedGharib);
+        setUjianTartiliEntries(loadedUjian);
 
         if (loadedSettings) {
           if (loadedSettings.academicYear) setAcademicYear(loadedSettings.academicYear);
@@ -183,32 +187,70 @@ export function useTqaData() {
   // Handler Update Gharib
   const handleUpdateGharib = useCallback(async (id: string, updated: Partial<GharibEntry>) => {
     let updatedObj: GharibEntry | undefined;
-    setGharibEntries(prev => prev.map(g => {
-      if (g.id === id) {
-        updatedObj = { ...g, ...updated };
+    setGharibEntries(prev => prev.map(item => {
+      if (item.id === id) {
+        updatedObj = { ...item, ...updated };
         return updatedObj;
       }
-      return g;
+      return item;
     }));
 
-    if (updatedObj) {
-      try {
+    try {
+      if (updatedObj) {
         await updateGharibEntry(updatedObj);
-        showToast('Data Gharib berhasil diperbarui', 'success');
-      } catch (err: any) {
-        showToast(`Gagal memperbarui database: ${err?.message || err}`, 'error');
+        showToast('Jurnal Gharib diperbarui', 'success');
       }
+    } catch (err: any) {
+      showToast(`Perubahan Gharib tersimpan lokal: ${err?.message || err}`, 'warning');
     }
   }, [showToast]);
 
   // Handler Delete Gharib
   const handleDeleteGharib = useCallback(async (id: string) => {
-    setGharibEntries(prev => prev.filter(g => g.id !== id));
+    setGharibEntries(prev => prev.filter(item => item.id !== id));
+
     try {
       await deleteGharibEntry(id);
       showToast('Data Gharib dihapus', 'info');
     } catch (err: any) {
-      showToast(`Gagal menghapus Gharib: ${err?.message || err}`, 'error');
+      showToast(`Gagal menghapus data Gharib: ${err?.message || err}`, 'error');
+    }
+  }, [showToast]);
+
+  // Handler Create Ujian Tartili
+  const handleCreateUjianTartili = useCallback(async (entry: Omit<UjianTartiliEntry, 'id'>) => {
+    const newEntry: UjianTartiliEntry = { ...entry, id: Date.now() };
+    setUjianTartiliEntries(prev => [newEntry, ...prev]);
+
+    try {
+      await createUjianTartiliEntry(newEntry);
+      showToast('Jadwal ujian berhasil ditambahkan', 'success');
+    } catch (err: any) {
+      showToast(`Jadwal ujian tersimpan lokal: ${err?.message || err}`, 'warning');
+    }
+  }, [showToast]);
+
+  // Handler Update Ujian Tartili
+  const handleUpdateUjianTartili = useCallback(async (entry: UjianTartiliEntry) => {
+    setUjianTartiliEntries(prev => prev.map(item => item.id === entry.id ? entry : item));
+
+    try {
+      await updateUjianTartiliEntry(entry);
+      showToast('Jadwal ujian berhasil diperbarui', 'success');
+    } catch (err: any) {
+      showToast(`Perubahan ujian tersimpan lokal: ${err?.message || err}`, 'warning');
+    }
+  }, [showToast]);
+
+  // Handler Delete Ujian Tartili
+  const handleDeleteUjianTartili = useCallback(async (id: string | number) => {
+    setUjianTartiliEntries(prev => prev.filter(item => item.id !== id));
+
+    try {
+      await deleteUjianTartiliEntry(id);
+      showToast('Jadwal ujian berhasil dihapus', 'info');
+    } catch (err: any) {
+      showToast(`Gagal menghapus jadwal ujian: ${err?.message || err}`, 'error');
     }
   }, [showToast]);
 
@@ -246,6 +288,7 @@ export function useTqaData() {
     setNotes(INITIAL_NOTES);
     setMurojaahEntries(INITIAL_MUROJAAH_ENTRIES);
     setGharibEntries([]);
+    setUjianTartiliEntries([]);
 
     try {
       await seedStudents(cleanStudents);
@@ -262,6 +305,7 @@ export function useTqaData() {
     notes,
     murojaahEntries,
     gharibEntries,
+    ujianTartiliEntries,
     academicYear,
     targets,
     teachers,
@@ -276,6 +320,9 @@ export function useTqaData() {
     handleCreateGharib,
     handleUpdateGharib,
     handleDeleteGharib,
+    handleCreateUjianTartili,
+    handleUpdateUjianTartili,
+    handleDeleteUjianTartili,
     handleSaveSettings,
     handleResetAllData
   };

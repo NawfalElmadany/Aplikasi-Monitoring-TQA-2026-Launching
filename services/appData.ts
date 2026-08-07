@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord, PersonalMessage, TartiliEntry } from '../types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord, PersonalMessage, TartiliEntry, UjianTartiliEntry } from '../types';
 
 
 type AppSettingsPayload = {
@@ -1194,6 +1194,135 @@ export const deleteTartiliEntry = async (id: string | number): Promise<void> => 
     if (error) throw error;
   } catch (error) {
     console.warn('Failed to delete Jurnal Tartili from Supabase:', error);
+  }
+};
+
+
+const mapUjianTartiliFromRow = (row: any): UjianTartiliEntry => ({
+  id: row.id,
+  studentId: row.student_id,
+  studentName: row.student_name,
+  className: row.class_name,
+  jilidAsal: row.jilid_asal,
+  targetJilid: row.target_jilid,
+  hariUjian: row.hari_ujian,
+  tanggalUjian: row.tanggal_ujian,
+  jamPelajaran: row.jam_pelajaran,
+  penguji: row.penguji,
+  status: row.status,
+  notes: row.notes ?? undefined,
+  createdAt: row.created_at,
+});
+
+const mapUjianTartiliToRow = (entry: Omit<UjianTartiliEntry, 'id'> & Partial<Pick<UjianTartiliEntry, 'id'>>) => ({
+  ...(entry.id ? { id: entry.id } : {}),
+  student_id: entry.studentId,
+  student_name: entry.studentName,
+  class_name: entry.className,
+  jilid_asal: entry.jilidAsal,
+  target_jilid: entry.targetJilid,
+  hari_ujian: entry.hariUjian,
+  tanggal_ujian: entry.tanggalUjian,
+  jam_pelajaran: entry.jamPelajaran,
+  penguji: entry.penguji,
+  status: entry.status,
+  notes: entry.notes ?? null,
+  updated_at: new Date().toISOString(),
+});
+
+export const loadUjianTartiliEntries = async (): Promise<UjianTartiliEntry[]> => {
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('ujian_tartili')
+      .select('*')
+      .order('tanggal_ujian', { ascending: true })
+      .order('jam_pelajaran', { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map(mapUjianTartiliFromRow);
+  } catch (error) {
+    console.warn('Failed to load Ujian Tartili from Supabase, loading from localStorage:', error);
+    const local = JSON.parse(localStorage.getItem('tqa_ujian_tartili') || '[]');
+    return local;
+  }
+};
+
+export const createUjianTartiliEntry = async (entry: Omit<UjianTartiliEntry, 'id'>): Promise<UjianTartiliEntry> => {
+  const newEntry: UjianTartiliEntry = { ...entry, id: Date.now() };
+
+  // Save to local storage first
+  try {
+    const local = JSON.parse(localStorage.getItem('tqa_ujian_tartili') || '[]');
+    local.unshift(newEntry);
+    localStorage.setItem('tqa_ujian_tartili', JSON.stringify(local));
+  } catch (e) {
+    console.error('Failed to save Ujian Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('ujian_tartili')
+      .insert([mapUjianTartiliToRow(entry)])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return mapUjianTartiliFromRow(data);
+  } catch (error) {
+    console.warn('Failed to create Ujian Tartili in Supabase:', error);
+    return newEntry;
+  }
+};
+
+export const updateUjianTartiliEntry = async (entry: UjianTartiliEntry): Promise<UjianTartiliEntry> => {
+  // Update locally first
+  try {
+    const local = JSON.parse(localStorage.getItem('tqa_ujian_tartili') || '[]');
+    const updated = local.map((item: any) => item.id === entry.id ? entry : item);
+    localStorage.setItem('tqa_ujian_tartili', JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to update Ujian Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('ujian_tartili')
+      .update(mapUjianTartiliToRow(entry))
+      .eq('id', entry.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return mapUjianTartiliFromRow(data);
+  } catch (error) {
+    console.warn('Failed to update Ujian Tartili in Supabase:', error);
+    return entry;
+  }
+};
+
+export const deleteUjianTartiliEntry = async (id: string | number): Promise<void> => {
+  // Delete locally first
+  try {
+    const local = JSON.parse(localStorage.getItem('tqa_ujian_tartili') || '[]');
+    const filtered = local.filter((item: any) => item.id !== id);
+    localStorage.setItem('tqa_ujian_tartili', JSON.stringify(filtered));
+  } catch (e) {
+    console.error('Failed to delete Ujian Tartili locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('ujian_tartili')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Failed to delete Ujian Tartili from Supabase:', error);
   }
 };
 

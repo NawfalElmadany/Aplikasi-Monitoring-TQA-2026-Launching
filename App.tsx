@@ -34,11 +34,12 @@ const MurojaahPage = lazy(() => import('./components/MurojaahPage'));
 const AttendancePage = lazy(() => import('./components/AttendancePage'));
 const TartiliPage = lazy(() => import('./components/TartiliPage'));
 const GharibPage = lazy(() => import('./components/GharibPage'));
+const UjianTartiliPage = lazy(() => import('./components/UjianTartiliPage'));
 
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry } from './types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry, UjianTartiliEntry } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry, loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
 import { useToast } from './context/ToastContext';
 
@@ -156,6 +157,17 @@ function App() {
          localStorage.setItem('tqa_tartili_classical_history', JSON.stringify(tartiliEntries));
       }
    }, [tartiliEntries]);
+
+   const [ujianTartiliEntries, setUjianTartiliEntries] = useState<UjianTartiliEntry[]>(() => {
+      const local = localStorage.getItem('tqa_ujian_tartili');
+      return local ? JSON.parse(local) : [];
+   });
+
+   useEffect(() => {
+      if (!isSupabaseConfigured) {
+         localStorage.setItem('tqa_ujian_tartili', JSON.stringify(ujianTartiliEntries));
+      }
+   }, [ujianTartiliEntries]);
 
 
    // Data State
@@ -667,13 +679,14 @@ function App() {
          }
 
          try {
-            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
+            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
                loadMurojaahEntries(),
                loadStudents(),
                loadAppSettings(),
                loadNotes(),
                loadGharibEntries().catch(() => []),
-               loadTartiliEntries().catch(() => [])
+               loadTartiliEntries().catch(() => []),
+               loadUjianTartiliEntries().catch(() => [])
             ]);
 
 
@@ -705,6 +718,9 @@ function App() {
             const nextTartiliEntries = remoteTartiliEntries.length > 0
                ? remoteTartiliEntries
                : (isResetFlag ? [] : INITIAL_TARTILI_SCHEDULE);
+            const nextUjianEntries = remoteUjianEntries.length > 0
+               ? remoteUjianEntries
+               : [];
 
 
             if (remoteMurojaahEntries.length === 0 && !isResetFlag) {
@@ -733,6 +749,7 @@ function App() {
             setNotes(nextNotes);
             setGharibEntries(nextGharibEntries);
             setTartiliEntries(nextTartiliEntries);
+            setUjianTartiliEntries(nextUjianEntries);
          } catch (error: any) {
             console.error('Failed to bootstrap app data:', error);
             if (isMounted) {
@@ -803,84 +820,139 @@ function App() {
       }
    };
 
-   const [isRefreshing, setIsRefreshing] = useState(false);
+   const handleSaveUjianEntry = async (entry: Omit<UjianTartiliEntry, 'id'>) => {
+      const tempId = Date.now();
+      const optimisticEntry: UjianTartiliEntry = { ...entry, id: tempId };
+      setUjianTartiliEntries(prev => [optimisticEntry, ...prev]);
 
-   const handleRefreshData = async () => {
-      if (isRefreshing) return;
-      if (!isSupabaseConfigured) {
-         triggerGlobalToast('Aplikasi berjalan dalam mode lokal (offline).');
-         return;
-      }
-
-      setIsRefreshing(true);
-      try {
-         const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
-            loadMurojaahEntries(),
-            loadStudents(),
-            loadAppSettings(),
-            loadNotes(),
-            loadGharibEntries().catch(() => []),
-            loadTartiliEntries().catch(() => [])
-         ]);
-
-         setStudents(remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s)));
-         setMurojaahEntries(remoteMurojaahEntries);
-         if (remoteSettings) {
-            setAcademicYear(remoteSettings.academicYear);
-            setTargets(remoteSettings.targets);
-            setTeachers(remoteSettings.teachers);
+      if (isSupabaseConfigured) {
+         try {
+            const saved = await createUjianTartiliEntry(entry);
+            setUjianTartiliEntries(prev => prev.map(item => item.id === tempId ? saved : item));
+         } catch (error) {
+            console.error('Failed to save Ujian Tartili entry:', error);
+            setUjianTartiliEntries(prev => prev.filter(item => item.id !== tempId));
+            alert('Gagal menyimpan jadwal ujian ke database.');
          }
-         setNotes(remoteNotes);
-         setGharibEntries(remoteGharibEntries);
-         setTartiliEntries(remoteTartiliEntries);
-
-         window.dispatchEvent(new Event('tqa_new_personal_message'));
-         triggerGlobalToast('Data berhasil disinkronkan dengan database.');
-      } catch (error) {
-         console.error('Failed to refresh data:', error);
-         triggerGlobalToast('Gagal melakukan sinkronisasi data.');
-      } finally {
-         setIsRefreshing(false);
       }
    };
 
-   // Background Polling sync every 30 seconds
-   useEffect(() => {
-      if (!isSupabaseConfigured) return;
+   const handleUpdateUjianEntry = async (entry: UjianTartiliEntry) => {
+      const existing = ujianTartiliEntries.find(item => item.id === entry.id);
+      if (!existing) return;
 
-      const interval = setInterval(async () => {
+      setUjianTartiliEntries(prev => prev.map(item => item.id === entry.id ? entry : item));
+
+      if (isSupabaseConfigured) {
          try {
-            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries] = await Promise.all([
-               loadMurojaahEntries(),
-               loadStudents(),
-               loadAppSettings(),
-               loadNotes(),
-               loadGharibEntries().catch(() => []),
-               loadTartiliEntries().catch(() => [])
-            ]);
-
-            setStudents(prevStudents => {
-               const mapped = remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s));
-               return JSON.stringify(prevStudents) !== JSON.stringify(mapped) ? mapped : prevStudents;
-            });
-            setMurojaahEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteMurojaahEntries) ? remoteMurojaahEntries : prev);
-            if (remoteSettings) {
-               setAcademicYear(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.academicYear) ? remoteSettings.academicYear : prev);
-               setTargets(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.targets) ? remoteSettings.targets : prev);
-               setTeachers(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.teachers) ? remoteSettings.teachers : prev);
-            }
-            setNotes(prev => JSON.stringify(prev) !== JSON.stringify(remoteNotes) ? remoteNotes : prev);
-            setGharibEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteGharibEntries) ? remoteGharibEntries : prev);
-            setTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteTartiliEntries) ? remoteTartiliEntries : prev);
-
-            window.dispatchEvent(new Event('tqa_new_personal_message'));
+            await updateUjianTartiliEntry(entry);
          } catch (error) {
-            console.warn('Background sync failed:', error);
+            console.error('Failed to update Ujian Tartili entry:', error);
+            setUjianTartiliEntries(prev => prev.map(item => item.id === entry.id ? existing : item));
+            alert('Gagal memperbarui jadwal ujian di database.');
          }
-      }, 30000);
+      }
+   };
 
-      return () => clearInterval(interval);
-   }, []);
+   const handleDeleteUjianEntry = async (id: string | number) => {
+      const existing = ujianTartiliEntries.find(item => item.id === id);
+      if (!existing) return;
+
+      setUjianTartiliEntries(prev => prev.filter(item => item.id !== id));
+
+      if (isSupabaseConfigured) {
+         try {
+            await deleteUjianTartiliEntry(id);
+         } catch (error) {
+            console.error('Failed to delete Ujian Tartili entry:', error);
+            setUjianTartiliEntries(prev => [existing, ...prev]);
+            alert('Gagal menghapus jadwal ujian dari database.');
+         }
+      }
+   };
+
+   const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefreshData = async () => {
+       if (isRefreshing) return;
+       if (!isSupabaseConfigured) {
+          triggerGlobalToast('Aplikasi berjalan dalam mode lokal (offline).');
+          return;
+       }
+
+       setIsRefreshing(true);
+       try {
+          const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
+             loadMurojaahEntries(),
+             loadStudents(),
+             loadAppSettings(),
+             loadNotes(),
+             loadGharibEntries().catch(() => []),
+             loadTartiliEntries().catch(() => []),
+             loadUjianTartiliEntries().catch(() => [])
+          ]);
+
+          setStudents(remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s)));
+          setMurojaahEntries(remoteMurojaahEntries);
+          if (remoteSettings) {
+             setAcademicYear(remoteSettings.academicYear);
+             setTargets(remoteSettings.targets);
+             setTeachers(remoteSettings.teachers);
+          }
+          setNotes(remoteNotes);
+          setGharibEntries(remoteGharibEntries);
+          setTartiliEntries(remoteTartiliEntries);
+          setUjianTartiliEntries(remoteUjianEntries);
+
+          window.dispatchEvent(new Event('tqa_new_personal_message'));
+          triggerGlobalToast('Data berhasil disinkronkan dengan database.');
+       } catch (error) {
+          console.error('Failed to refresh data:', error);
+          triggerGlobalToast('Gagal melakukan sinkronisasi data.');
+       } finally {
+          setIsRefreshing(false);
+       }
+    };
+
+    // Background Polling sync every 30 seconds
+    useEffect(() => {
+       if (!isSupabaseConfigured) return;
+
+       const interval = setInterval(async () => {
+          try {
+             const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
+                loadMurojaahEntries(),
+                loadStudents(),
+                loadAppSettings(),
+                loadNotes(),
+                loadGharibEntries().catch(() => []),
+                loadTartiliEntries().catch(() => []),
+                loadUjianTartiliEntries().catch(() => [])
+             ]);
+
+             setStudents(prevStudents => {
+                const mapped = remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s));
+                return JSON.stringify(prevStudents) !== JSON.stringify(mapped) ? mapped : prevStudents;
+             });
+             setMurojaahEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteMurojaahEntries) ? remoteMurojaahEntries : prev);
+             if (remoteSettings) {
+                setAcademicYear(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.academicYear) ? remoteSettings.academicYear : prev);
+                setTargets(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.targets) ? remoteSettings.targets : prev);
+                setTeachers(prev => JSON.stringify(prev) !== JSON.stringify(remoteSettings.teachers) ? remoteSettings.teachers : prev);
+             }
+             setNotes(prev => JSON.stringify(prev) !== JSON.stringify(remoteNotes) ? remoteNotes : prev);
+             setGharibEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteGharibEntries) ? remoteGharibEntries : prev);
+             setTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteTartiliEntries) ? remoteTartiliEntries : prev);
+             setUjianTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteUjianEntries) ? remoteUjianEntries : prev);
+
+             window.dispatchEvent(new Event('tqa_new_personal_message'));
+          } catch (error) {
+             console.warn('Background sync failed:', error);
+          }
+       }, 30000);
+
+       return () => clearInterval(interval);
+    }, []);
 
 
    useEffect(() => {
@@ -897,139 +969,144 @@ function App() {
       return () => window.clearTimeout(timeoutId);
    }, [academicYear, targets, teachers, isAppLoading]);
 
-   const handleBackup = () => {
-      const backupData = {
-         user,
-         students,
-         academicYear,
-         targets,
-         teachers,
-         notes,
-         murojaahEntries,
-         timestamp: new Date().toISOString(),
-         version: '1.0'
-      };
+    const handleBackup = () => {
+       const backupData = {
+          user,
+          students,
+          academicYear,
+          targets,
+          teachers,
+          notes,
+          murojaahEntries,
+          ujianTartiliEntries,
+          timestamp: new Date().toISOString(),
+          version: '1.0'
+       };
 
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `tqa-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-   };
+       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `tqa-backup-${new Date().toISOString().split('T')[0]}.json`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+    };
 
-   const handleRestore = (file: File) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-         try {
-            const data = JSON.parse(e.target?.result as string);
-            if (data.user) setUser(data.user);
-            if (data.students) setStudents(data.students);
-            if (data.academicYear) setAcademicYear(data.academicYear);
-            if (data.targets) setTargets(data.targets);
-            if (data.teachers) setTeachers(data.teachers);
-            if (data.notes) setNotes(data.notes);
-            if (data.murojaahEntries) setMurojaahEntries(data.murojaahEntries);
+    const handleRestore = (file: File) => {
+       const reader = new FileReader();
+       reader.onload = (e) => {
+          try {
+             const data = JSON.parse(e.target?.result as string);
+             if (data.user) setUser(data.user);
+             if (data.students) setStudents(data.students);
+             if (data.academicYear) setAcademicYear(data.academicYear);
+             if (data.targets) setTargets(data.targets);
+             if (data.teachers) setTeachers(data.teachers);
+             if (data.notes) setNotes(data.notes);
+             if (data.murojaahEntries) setMurojaahEntries(data.murojaahEntries);
+             if (data.ujianTartiliEntries) setUjianTartiliEntries(data.ujianTartiliEntries);
 
-            if (isSupabaseConfigured) {
-               if (data.students) {
-                  void seedStudents(data.students);
-               }
+             if (isSupabaseConfigured) {
+                if (data.students) {
+                   void seedStudents(data.students);
+                }
 
-               if (data.academicYear || data.targets || data.teachers) {
-                  void saveAppSettings({
-                     academicYear: data.academicYear ?? academicYear,
-                     targets: data.targets ?? targets,
-                     teachers: data.teachers ?? teachers,
-                  });
-               }
+                if (data.academicYear || data.targets || data.teachers) {
+                   void saveAppSettings({
+                      academicYear: data.academicYear ?? academicYear,
+                      targets: data.targets ?? targets,
+                      teachers: data.teachers ?? teachers,
+                   });
+                }
 
-               if (data.notes) {
-                  void seedNotes(data.notes);
-               }
+                if (data.notes) {
+                   void seedNotes(data.notes);
+                }
 
-               if (data.murojaahEntries) {
-                  void seedMurojaahEntries(data.murojaahEntries);
-               }
-            }
+                if (data.murojaahEntries) {
+                   void seedMurojaahEntries(data.murojaahEntries);
+                }
+             }
 
-            alert('Data berhasil dipulihkan!');
-         } catch (error) {
-            console.error('Restore failed:', error);
-            alert('Gagal memulihkan data. File tidak valid.');
-         }
-      };
-      reader.readAsText(file);
-   };
+             alert('Data berhasil dipulihkan!');
+          } catch (error) {
+             console.error('Restore failed:', error);
+             alert('Gagal memulihkan data. File tidak valid.');
+          }
+       };
+       reader.readAsText(file);
+    };
 
-   const handleResetData = async () => {
-      if (!window.confirm("Apakah Anda yakin ingin menghapus seluruh data dan memulai dari nol? Tindakan ini akan menghapus semua riwayat setoran, riwayat absensi, catatan guru, riwayat gharib, dan progres siswa.")) {
-         return;
-      }
+    const handleResetData = async () => {
+       if (!window.confirm("Apakah Anda yakin ingin menghapus seluruh data dan memulai dari nol? Tindakan ini akan menghapus semua riwayat setoran, riwayat absensi, catatan guru, riwayat gharib, dan progres siswa.")) {
+          return;
+       }
 
-      setIsAppLoading(true);
-      try {
-         // Clean student progress
-         const cleanStudents: Student[] = INITIAL_STUDENTS.map(s => ({
-            ...s,
-            currentJuz: undefined,
-            currentSurah: '-',
-            iqraLevel: 1,
-            page: '',
-            totalProgress: 0,
-            lastUpdate: 'Belum ada setoran',
-            lastScore: undefined,
-            status: 'Perlu Bimbingan',
-            notes: '',
-            requiresAttention: false
-         }));
+       setIsAppLoading(true);
+       try {
+          // Clean student progress
+          const cleanStudents: Student[] = INITIAL_STUDENTS.map(s => ({
+             ...s,
+             currentJuz: undefined,
+             currentSurah: '-',
+             iqraLevel: 1,
+             page: '',
+             totalProgress: 0,
+             lastUpdate: 'Belum ada setoran',
+             lastScore: undefined,
+             status: 'Perlu Bimbingan',
+             notes: '',
+             requiresAttention: false
+          }));
 
-         // Clear local storage by setting them to empty arrays to prevent mock fallback loading
-         localStorage.setItem('tqa_setoran_logs', JSON.stringify([]));
-         localStorage.setItem('tqa_gharib_entries', JSON.stringify([]));
-         localStorage.setItem('tqa_attendance_records', JSON.stringify([]));
-         localStorage.setItem('tqa_personal_messages', JSON.stringify([]));
-         localStorage.setItem('tqa_students', JSON.stringify(cleanStudents));
-         localStorage.setItem('tqa_notes', JSON.stringify([]));
-         localStorage.setItem('tqa_murojaah_entries', JSON.stringify([]));
-         localStorage.setItem('tqa_tartili_classical_history', JSON.stringify([]));
-         localStorage.setItem('tqa_is_reset', 'true');
+          // Clear local storage by setting them to empty arrays to prevent mock fallback loading
+          localStorage.setItem('tqa_setoran_logs', JSON.stringify([]));
+          localStorage.setItem('tqa_gharib_entries', JSON.stringify([]));
+          localStorage.setItem('tqa_attendance_records', JSON.stringify([]));
+          localStorage.setItem('tqa_personal_messages', JSON.stringify([]));
+          localStorage.setItem('tqa_students', JSON.stringify(cleanStudents));
+          localStorage.setItem('tqa_notes', JSON.stringify([]));
+          localStorage.setItem('tqa_murojaah_entries', JSON.stringify([]));
+          localStorage.setItem('tqa_tartili_classical_history', JSON.stringify([]));
+          localStorage.setItem('tqa_ujian_tartili', JSON.stringify([]));
+          localStorage.setItem('tqa_is_reset', 'true');
 
-         if (isSupabaseConfigured && supabase) {
-            try {
-               // Seed clean students (so progress fields are set to null/empty in database)
-               await seedStudents(cleanStudents);
+          if (isSupabaseConfigured && supabase) {
+             try {
+                // Seed clean students (so progress fields are set to null/empty in database)
+                await seedStudents(cleanStudents);
 
-               // Delete records from database tables
-               await Promise.all([
-                  supabase.from('notes').delete().neq('id', 0),
-                  supabase.from('murojaah_entries').delete().neq('id', 0),
-                  supabase.from('jurnal_gharib').delete().neq('id', ''),
-                  supabase.from('setoran').delete().neq('id', 0),
-                  supabase.from('attendance').delete().neq('id', '')
-               ]);
-            } catch (error) {
-               console.error('Failed to sync reset to Supabase:', error);
-            }
-         }
+                // Delete records from database tables
+                await Promise.all([
+                   supabase.from('notes').delete().neq('id', 0),
+                   supabase.from('murojaah_entries').delete().neq('id', 0),
+                   supabase.from('jurnal_gharib').delete().neq('id', ''),
+                   supabase.from('setoran').delete().neq('id', 0),
+                   supabase.from('attendance').delete().neq('id', ''),
+                   supabase.from('ujian_tartili').delete().neq('id', 0)
+                ]);
+             } catch (error) {
+                console.error('Failed to sync reset to Supabase:', error);
+             }
+          }
 
-         setStudents(cleanStudents);
-         setMurojaahEntries([]);
-         setGharibEntries([]);
-         setNotes([]);
-         
-         alert("Seluruh data berhasil di-reset ke nol! Halaman akan dimuat ulang.");
-         window.location.reload();
-      } catch (err: any) {
-         console.error("Reset failed:", err);
-         alert("Gagal melakukan reset data: " + err.message);
-      } finally {
-         setIsAppLoading(false);
-      }
-   };
+          setStudents(cleanStudents);
+          setMurojaahEntries([]);
+          setGharibEntries([]);
+          setNotes([]);
+          setUjianTartiliEntries([]);
+          
+          alert("Seluruh data berhasil di-reset ke nol! Halaman akan dimuat ulang.");
+          window.location.reload();
+       } catch (err: any) {
+          console.error("Reset failed:", err);
+          alert("Gagal melakukan reset data: " + err.message);
+       } finally {
+          setIsAppLoading(false);
+       }
+    };
    // Scroll listener to toggle header shadow in Laporan page
    const [isScrolled, setIsScrolled] = useState(false);
 
@@ -1254,6 +1331,23 @@ function App() {
                   onSaveEntry={handleSaveTartiliEntry}
                   onUpdateEntry={handleUpdateTartiliEntry}
                   onDeleteEntry={handleDeleteTartiliEntry}
+               />
+            );
+
+         case 'ujian_tartili':
+            return (
+               <UjianTartiliPage
+                  user={user}
+                  students={students}
+                  schedule={ujianTartiliEntries}
+                  onSaveEntry={handleSaveUjianEntry}
+                  onUpdateEntry={handleUpdateUjianEntry}
+                  onDeleteEntry={handleDeleteUjianEntry}
+                  onMenuClick={() => setIsSidebarOpen(true)}
+                  notifications={notifications}
+                  onDismissNotification={handleDismissNotification}
+                  onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                  unreadNotesCount={unreadNotesCount}
                />
             );
 
@@ -1969,7 +2063,7 @@ function App() {
 
           <div className="flex-1 flex flex-col h-screen overflow-hidden relative pb-20 lg:pb-0">
              <main className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 !pt-0 scroll-smooth flex flex-col">
-                 {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil'].includes(activePage) && (
+                 {!['riwayat', 'santri', 'laporan', 'absensi', 'input_setoran', 'dashboard', 'catatan', 'murojaah', 'settings', 'tartili', 'gharib', 'profil_siswa', 'hafalan', 'profil', 'ujian_tartili'].includes(activePage) && (
                     <Header
                        user={user}
                        onMenuClick={() => setIsSidebarOpen(true)}

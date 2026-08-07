@@ -1,6 +1,6 @@
 import { getAvatarUrl } from './utils/avatar';
 import { AcademicYear, MenuItem, MurojaahEntry, Note, Student, Target, Teacher } from './types';
-import { LayoutDashboard, Users, BookOpen, FileText, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, FileText, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, ClipboardCheck } from 'lucide-react';
 
 const RAW_STUDENTS = [
   // Kelas 5B
@@ -280,6 +280,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: 'gharib', label: 'Gharib', icon: BookOpen },
   { id: 'santri', label: 'Data Siswa', icon: Users },
   { id: 'riwayat', label: 'Monitoring Harian', icon: History },
+  { id: 'ujian_tartili', label: 'Ujian Tartili', icon: ClipboardCheck },
   { id: 'laporan', label: 'Laporan', icon: FileText },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
