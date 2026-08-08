@@ -708,7 +708,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                     {/* Kartu 1: Bimbingan Khusus */}
                     <button 
                         onClick={() => setIsModalOpen(true)}
-                        className="text-left w-full bg-white dark:bg-[#16271E] border border-gray-200/80 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
+                        className="text-left w-full bg-white dark:bg-[#16271E] border border-slate-100 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
                     >
                         <div className="flex justify-between items-center w-full gap-2">
                             <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Bimbingan Khusus</span>
@@ -723,16 +723,16 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                     </button>
 
                     {/* Kartu 2: Murojaah Terakhir */}
-                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="bg-white dark:bg-[#16271E] border border-slate-100 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                         <div className="flex justify-between items-center w-full gap-2">
                             <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Murojaah Terakhir</span>
                             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                 {isPastClass && (
-                                    <span className="bg-slate-100 dark:bg-emerald-950/40 text-slate-500 dark:text-slate-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                    <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
                                         Selesai
                                     </span>
                                 )}
-                                <div className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg">
+                                <div className="text-blue-600 dark:text-blue-500 bg-blue-50 dark:bg-blue-500/10 p-1.5 sm:p-2 rounded-lg">
                                     <BookOpen size={16} className="sm:w-[18px] sm:h-[18px]" />
                                 </div>
                             </div>
@@ -747,11 +747,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                     }`}>
                                         Kelas {targetClassId}
                                     </h4>
-                                    <p className={`text-[10px] sm:text-xs mt-1 sm:mt-2 truncate ${
-                                        isPastClass
-                                            ? 'text-slate-400 dark:text-slate-500'
-                                            : 'text-emerald-600 dark:text-emerald-400/80'
-                                    }`} title={lastMurojaah?.surah || "Belum ada setoran"}>
+                                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1 sm:mt-2 truncate font-semibold" title={lastMurojaah?.surah || "Belum ada setoran"}>
                                         {lastMurojaah?.surah || "Belum ada setoran"}
                                     </p>
                                 </>
@@ -759,22 +755,23 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                 <>
                                     <h4 className="text-sm sm:text-xl font-bold text-slate-400 dark:text-slate-500 truncate">Menunggu Jadwal</h4>
                                     <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-400 mt-1 sm:mt-2 truncate">-</p>
+                                
                                 </>
                             )}
                         </div>
                     </div>
 
                     {/* Kartu 3: Gharib Terakhir */}
-                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="bg-white dark:bg-[#16271E] border border-slate-100 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                         <div className="flex justify-between items-center w-full gap-2">
                             <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Gharib Terakhir</span>
                             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                 {jadwalGharibHariIni && (
-                                    <span className="bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                    <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold shadow-sm">
                                         Hari Ini
                                     </span>
                                 )}
-                                <div className="text-teal-600 dark:text-teal-500 bg-teal-50 dark:bg-teal-500/10 p-1.5 sm:p-2 rounded-lg">
+                                <div className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 p-1.5 sm:p-2 rounded-lg">
                                     <Bookmark size={16} className="sm:w-[18px] sm:h-[18px]" />
                                 </div>
                             </div>
@@ -785,7 +782,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                     <h4 className="text-lg sm:text-2xl font-black text-slate-800 dark:text-white truncate">
                                         Kelas {jadwalGharibHariIni.kelas_id}
                                     </h4>
-                                    <p className="text-[10px] sm:text-xs text-teal-600 dark:text-teal-400/80 mt-1 sm:mt-2 truncate font-semibold" title={getGharibDetailText()}>
+                                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-1 sm:mt-2 truncate font-semibold" title={getGharibDetailText()}>
                                         {getGharibDetailText()}
                                     </p>
                                 </>
@@ -799,16 +796,16 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                     </div>
 
                     {/* Kartu 4: Belum Setor Kemarin */}
-                    <div className="bg-white dark:bg-[#16271E] border border-gray-200 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="bg-white dark:bg-[#16271E] border border-slate-100 dark:border-[#1F382B] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                         <div className="flex justify-between items-center w-full gap-2">
                             <span className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate">Belum Setor (H-1)</span>
-                            <div className="text-rose-600 dark:text-rose-500 bg-rose-50 dark:bg-rose-500/10 p-1.5 sm:p-2 rounded-lg shrink-0">
+                            <div className="text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/20 p-1.5 sm:p-2 rounded-lg shrink-0">
                                 <XCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
                             </div>
                         </div>
                         <div className="mt-2 sm:mt-4">
                             <h4 className="text-lg sm:text-3xl font-black text-slate-800 dark:text-white truncate">{metrics.belumSetor}</h4>
-                            <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400/80 mt-1 sm:mt-2 truncate">Butuh *follow-up* hari ini</p>
+                            <p className="text-[10px] sm:text-xs text-red-500 dark:text-red-400 mt-1 sm:mt-2 truncate">Butuh *follow-up* hari ini</p>
                         </div>
                     </div>
                 </div>
@@ -829,8 +826,8 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                     onClick={() => setHariAktif(hari)}
                                     className={`flex flex-col items-center justify-center p-3.5 sm:p-5 rounded-2xl border text-center transition-all duration-300 cursor-pointer focus:outline-none ${
                                         isActive
-                                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-500/80 dark:text-emerald-400 font-bold shadow-[0_4px_20px_rgba(16,185,129,0.08)] ring-1 ring-emerald-500/30'
-                                            : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50 dark:bg-[#16271E] dark:border-[#1F382B] dark:text-slate-300 dark:hover:bg-[#1C2E24]/30'
+                                            ? 'bg-emerald-600 border-emerald-600 text-white dark:bg-emerald-600 dark:border-emerald-600 dark:text-white font-bold shadow-[0_4px_20px_rgba(16,185,129,0.15)]'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#16271E] dark:border-[#1F382B] dark:text-slate-300 dark:hover:bg-[#1C2E24]/30'
                                     }`}
                                 >
                                     <span className="text-sm sm:text-base font-semibold">{hari}</span>
