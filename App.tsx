@@ -667,6 +667,60 @@ function App() {
       }
    }, [user]);
 
+   // Browser History (Hash) Routing sync to support PWA/Mobile Back Button
+   useEffect(() => {
+      if (user) {
+         const hash = window.location.hash.replace('#/', '');
+         const validPages = [
+            'dashboard', 'input_setoran', 'murojaah', 'tartili', 'gharib', 
+            'santri', 'riwayat', 'ujian_tartili', 'catatan', 'laporan', 
+            'settings', 'absensi', 'profil_siswa', 'hafalan', 'profil'
+         ];
+         if (hash && validPages.includes(hash)) {
+            if (activePage !== hash) {
+               setActivePage(hash);
+            }
+         } else {
+            window.location.hash = '#/dashboard';
+         }
+      } else {
+         if (window.location.hash) {
+            window.history.replaceState(null, '', ' ');
+         }
+      }
+   }, [user]);
+
+   useEffect(() => {
+      if (user) {
+         const currentHash = window.location.hash.replace('#/', '');
+         if (currentHash !== activePage) {
+            window.location.hash = '#/' + activePage;
+         }
+      }
+   }, [activePage, user]);
+
+   useEffect(() => {
+      const handleHashChange = () => {
+         if (!user) return;
+         const hash = window.location.hash.replace('#/', '');
+         if (hash && hash !== activePage) {
+            const validPages = [
+               'dashboard', 'input_setoran', 'murojaah', 'tartili', 'gharib', 
+               'santri', 'riwayat', 'ujian_tartili', 'catatan', 'laporan', 
+               'settings', 'absensi', 'profil_siswa', 'hafalan', 'profil'
+            ];
+            if (validPages.includes(hash)) {
+               setActivePage(hash);
+            }
+         }
+      };
+
+      window.addEventListener('hashchange', handleHashChange);
+      return () => {
+         window.removeEventListener('hashchange', handleHashChange);
+      };
+   }, [activePage, user]);
+
    useEffect(() => {
       let isMounted = true;
 
