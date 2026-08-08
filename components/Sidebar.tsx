@@ -244,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activePage, onNaviga
                                 className={`
                   w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 group relative overflow-hidden cursor-pointer
                   ${isActive
-                                        ? 'bg-emerald-600 dark:bg-emerald-600 text-white dark:text-white font-bold shadow-sm'
+                                        ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white dark:text-white font-bold shadow-sm'
                                         : 'text-gray-500 dark:text-[#8BA398] hover:bg-gray-50 dark:hover:bg-[#121F18]/50 hover:text-gray-900 dark:hover:text-[#E2EAE5] font-medium'
                                     }
                 `}

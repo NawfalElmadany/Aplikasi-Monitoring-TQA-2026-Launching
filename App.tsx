@@ -2110,7 +2110,7 @@ function App() {
                              }}
                              className={`flex items-center gap-1.5 flex-shrink-0 pl-4 pr-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 relative select-none cursor-pointer ${
                                 isActive 
-                                   ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-[#09120E] scale-105 shadow-md shadow-emerald-600/10' 
+                                   ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white dark:text-white scale-105 shadow-md shadow-emerald-600/10' 
                                    : isLogout
                                       ? 'text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300'
                                       : 'text-slate-700 dark:text-[#9FB8AB] hover:text-slate-900 dark:hover:text-white'

@@ -101,6 +101,8 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
     // Active Schedule Engine
     // 1. Define complete teaching schedule
+    // Active Schedule Engine
+    // 1. Define complete teaching schedule
     const jadwalMengajar = useMemo(() => ({
         'Senin': [
             { label: 'JP 1,2', className: 'Kelas 5C', time: 'TQA / 07:30 - 08:40', start: '07:30', end: '08:40' },
@@ -129,17 +131,89 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
             { label: 'JP 7,8', className: 'Kelas 6D', time: 'TQA / 11:15 - 12:25', start: '11:15', end: '12:25' },
             { label: 'JP 9', className: 'Kelas 5C', time: 'TQA / 13:10 - 13:45', start: '13:10', end: '13:45' },
             { label: 'JP 11', className: 'Kelas 5D', time: 'TQA / 14:20 - 14:55', start: '14:20', end: '14:55' }
-        ]
+        ],
+        'Jumat': []
     }), []);
 
     // 2. Active Day detection
     const currentDayOfWeek = useMemo(() => {
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const dayName = days[new Date().getDay()];
-        return ['Senin', 'Selasa', 'Rabu', 'Kamis'].includes(dayName) ? dayName : 'Senin';
+        return ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].includes(dayName) ? dayName : 'Senin';
     }, []);
 
     const [hariAktif, setHariAktif] = useState<string | null>(currentDayOfWeek);
+
+    // Fetch and track active classical murojaah materials for each class
+    const [classMaterials, setClassMaterials] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const fetchClassMaterials = async () => {
+            let materialsMap: Record<string, string> = {
+                '5B': "Surah An-Naba (1-40)",
+                '5C': "Surah An-Nazi'at (1-46)",
+                '5D': "Surah 'Abasa (1-42)",
+                '6C': "Surah At-Takwir (1-29)",
+                '6D': "Surah Al-Infitar (1-19)"
+            };
+
+            try {
+                const localLogs = JSON.parse(localStorage.getItem('tqa_setoran_logs') || '[]');
+                localLogs.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                localLogs.forEach((log: any) => {
+                    if (log.class && log.currentSurah && !materialsMap[log.class]) {
+                        materialsMap[log.class] = log.currentSurah;
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+            }
+
+            if (supabase) {
+                try {
+                    const { data, error } = await supabase
+                        .from('murojaah_entries')
+                        .select('class_name, surah')
+                        .eq('type', 'classical')
+                        .order('entry_date', { ascending: false });
+                    
+                    if (!error && data) {
+                        data.forEach((row: any) => {
+                            const className = row.class_name;
+                            if (className && !materialsMap[className]) {
+                                materialsMap[className] = row.surah.startsWith('Surah ') ? row.surah : `Surah ${row.surah}`;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to query murojaah materials:', e);
+                }
+            }
+
+            setClassMaterials(materialsMap);
+        };
+
+        void fetchClassMaterials();
+    }, [supabase]);
+
+    const getMaterialForClass = (className: string) => {
+        const cleanName = className.replace('Kelas ', '');
+        if (cleanName === '6D') {
+            try {
+                const localGharib = JSON.parse(localStorage.getItem('tqa_gharib_entries') || '[]');
+                const entry = localGharib.find((e: any) => e.className === cleanName || e.class_name === cleanName);
+                if (entry) {
+                    const page = entry.nomor_halaman || entry.materi_halaman || '';
+                    const mat = entry.nama_materi || entry.material || '';
+                    return page ? `Gharib Hal. ${page} - ${mat}` : mat || 'Materi Gharib';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            return 'Gharib Hal. 21-28';
+        }
+        return classMaterials[cleanName] || 'Surah Al-Mulk (1-10)';
+    };
 
     // 3. Active Schedule Engine
     const jadwalHariIni = useMemo(() => {
@@ -163,8 +237,8 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const actualDay = days[new Date().getDay()];
         
-        // If it's Friday, Saturday, or Sunday (not a scheduled teaching day)
-        if (!['Senin', 'Selasa', 'Rabu', 'Kamis'].includes(actualDay)) {
+        // If it's Saturday or Sunday (not a scheduled teaching day)
+        if (!['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].includes(actualDay)) {
             return `Hari ini (${actualDay}) tidak ada jadwal mengajar resmi. Selamat beristirahat dan tetap semangat muraja'ah! :)`;
         }
 
@@ -811,74 +885,133 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                 </div>
 
                 {/* Schedule Section (Jadwal Mengajar) */}
-                <div className="w-full">
-                    <div className="flex items-center justify-between mb-6">
+                <div className="w-full bg-white dark:bg-[#121F18] border border-slate-100 dark:border-white/5 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
+                    <div className="flex flex-col gap-4">
                         <h3 className="text-xl font-bold text-slate-800 dark:text-white">Jadwal Mengajar</h3>
-                    </div>
-
-                    {/* Day Selectors Grid (Kotak-kotak) */}
-                    <div className="grid grid-cols-4 gap-2.5 sm:gap-4 w-full mb-5">
-                        {(['Senin', 'Selasa', 'Rabu', 'Kamis'] as const).map((hari) => {
-                            const isActive = hariAktif === hari;
-                            return (
-                                <button
-                                    key={hari}
-                                    onClick={() => setHariAktif(hari)}
-                                    className={`flex flex-col items-center justify-center p-3.5 sm:p-5 rounded-2xl border text-center transition-all duration-300 cursor-pointer focus:outline-none ${
-                                        isActive
-                                            ? 'bg-emerald-600 border-emerald-600 text-white dark:bg-emerald-600 dark:border-emerald-600 dark:text-white font-bold shadow-[0_4px_20px_rgba(16,185,129,0.15)]'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#16271E] dark:border-[#1F382B] dark:text-slate-300 dark:hover:bg-[#1C2E24]/30'
-                                    }`}
-                                >
-                                    <span className="text-sm sm:text-base font-semibold">{hari}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Schedules List for Active Day */}
-                    {hariAktif && (
-                        <div className="w-full flex flex-col gap-3">
-                            {jadwalMengajar[hariAktif as keyof typeof jadwalMengajar].map((schedule) => {
-                                const isActive = currentDayOfWeek === hariAktif && schedule.className.replace('Kelas ', '') === activeClassId;
+                        
+                        {/* Day Tabs */}
+                        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2">
+                            {(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const).map((hari) => {
+                                const isActive = hariAktif === hari;
                                 return (
-                                    <div 
-                                        key={schedule.className}
-                                        onClick={() => setIsScheduleModalOpen(true)}
-                                        className={`w-full flex justify-between items-center p-4 bg-white dark:bg-[#16271E] border rounded-2xl shadow-sm hover:shadow-md hover:bg-slate-50/50 dark:hover:bg-[#1C2E24]/30 transition-all cursor-pointer ${
-                                            isActive 
-                                                ? 'border-emerald-500 dark:border-emerald-500/80 ring-1 ring-emerald-500/30' 
-                                                : 'border-gray-200/80 dark:border-[#1F382B]'
+                                    <button
+                                        key={hari}
+                                        onClick={() => setHariAktif(hari)}
+                                        className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer focus:outline-none whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-sm'
+                                                : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 bg-transparent'
                                         }`}
                                     >
-                                        {/* Left Side: Class & Time */}
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg ${isActive ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' : 'text-slate-400 bg-slate-100 dark:bg-white/5'}`}>
-                                                <Clock size={18} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-800 dark:text-[#E2EAE5] text-sm">{schedule.className}</h4>
-                                                <p className="text-xs text-slate-500 dark:text-[#8BA398]">{schedule.time.split(' / ')[1] || schedule.time}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Right Side: Label */}
-                                        <div className="flex items-center gap-3">
-                                            {schedule.label && (
-                                                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md ${
-                                                    isActive 
-                                                        ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/30' 
-                                                        : 'text-slate-400 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5'
-                                                }`}>
-                                                    {schedule.label}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                                        {hari}
+                                    </button>
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Schedules List with Timeline */}
+                    {hariAktif && (
+                        <div className="flex flex-col gap-4">
+                            {(() => {
+                                const schedules = jadwalMengajar[hariAktif as keyof typeof jadwalMengajar] || [];
+                                const total = schedules.length;
+                                
+                                return total > 0 ? (
+                                    schedules.map((schedule, idx) => {
+                                        const isActive = currentDayOfWeek === hariAktif && schedule.className.replace('Kelas ', '') === activeClassId;
+                                        const timePart = schedule.time.split(' / ')[1] || schedule.time;
+                                        const timeParts = timePart.split(' - ');
+                                        const startTime = timeParts[0]?.trim().replace(':', '.') || '';
+                                        const endTime = timeParts[1]?.trim().replace(':', '.') || '';
+
+                                        return (
+                                            <div 
+                                                key={schedule.className}
+                                                className="flex items-stretch gap-0"
+                                            >
+                                                {/* Left Side: Time Card Cell */}
+                                                <div className={`w-20 shrink-0 flex flex-col items-center justify-center bg-white dark:bg-[#16271E]/40 border-slate-100 dark:border-[#1F382B]/35 ${
+                                                    idx === 0 ? 'border-t border-l border-r rounded-t-2xl' : 'border-l border-r'
+                                                } ${
+                                                    idx === total - 1 ? 'border-b border-l border-r rounded-b-2xl' : ''
+                                                } ${
+                                                    total === 1 ? 'border-t border-b rounded-2xl' : ''
+                                                } py-3`}>
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-none">{startTime}</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5 leading-none">{endTime}</span>
+                                                </div>
+
+                                                {/* Middle Column: Timeline Connector */}
+                                                <div className="w-10 shrink-0 flex items-center justify-center relative">
+                                                    {/* Horizontal connector line */}
+                                                    <div className="absolute left-0 right-0 h-px bg-slate-100 dark:bg-[#1A2E24]"></div>
+                                                    
+                                                    {/* Vertical timeline line */}
+                                                    {total > 1 && (
+                                                        <div className={`absolute w-px bg-slate-100 dark:bg-[#1A2E24] ${
+                                                            idx === 0 ? 'top-1/2 bottom-0' : idx === total - 1 ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
+                                                        }`}></div>
+                                                    )}
+
+                                                    {/* Timeline Circle Dot */}
+                                                    <div className={`w-3.5 h-3.5 rounded-full border-2 bg-white dark:bg-[#121F18] z-10 shrink-0 ${
+                                                        isActive 
+                                                            ? 'border-emerald-600 dark:border-emerald-500 animate-pulse ring-4 ring-emerald-500/10' 
+                                                            : 'border-emerald-600 dark:border-emerald-500/60'
+                                                    }`}></div>
+                                                </div>
+
+                                                {/* Right Side: Class Card Box */}
+                                                <div 
+                                                    onClick={() => setIsScheduleModalOpen(true)}
+                                                    className={`flex-1 flex justify-between items-center p-4 rounded-2xl border transition-all cursor-pointer ${
+                                                        isActive 
+                                                            ? 'bg-emerald-50/40 dark:bg-emerald-950/15 border-emerald-500/60 dark:border-emerald-500/40 ring-1 ring-emerald-500/10' 
+                                                            : 'bg-[#F8FAFC]/50 dark:bg-[#16271E]/30 border-slate-100 dark:border-[#1F382B]/30 hover:bg-[#F8FAFC] dark:hover:bg-[#16271E]/50'
+                                                    }`}
+                                                >
+                                                    <div className="min-w-0 pr-2">
+                                                        <h4 className="font-bold text-slate-800 dark:text-[#E2EAE5] text-sm leading-tight">{schedule.className}</h4>
+                                                        <p className="text-[11px] text-slate-400 dark:text-[#8BA398] mt-1.5 truncate font-semibold">
+                                                            {getMaterialForClass(schedule.className)}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Badges */}
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/10">
+                                                            {schedule.className}
+                                                        </span>
+                                                        {schedule.label && (
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-white/5">
+                                                                {schedule.label}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="py-8 text-center text-slate-400 dark:text-slate-500 font-medium">
+                                        Tidak ada jadwal mengajar pada hari {hariAktif}.
+                                    </div>
+                                );
+                            })()}
+                        </div>
                     )}
+
+                    {/* Centered Button at the bottom */}
+                    <div className="flex justify-center border-t border-slate-100 dark:border-[#1A2E24] pt-4">
+                        <button
+                            onClick={() => setIsScheduleModalOpen(true)}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-[#16271E] border border-slate-200 dark:border-[#1F382B] text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-[#16271E]/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                        >
+                            <Calendar size={14} className="text-slate-400" />
+                            <span>Lihat Jadwal Lengkap</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
