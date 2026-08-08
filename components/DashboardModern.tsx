@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Video, MoreHorizontal, ChevronRight, ChevronDown, User as UserIcon, X, UserX, BookOpen, Bookmark, XCircle, Calendar, Award, Star, Book, Loader2 } from 'lucide-react';
+import { Clock, Video, MoreHorizontal, ChevronRight, ChevronDown, User as UserIcon, X, UserX, BookOpen, Bookmark, XCircle, Calendar, Award, Star, Book, Loader2, Bell } from 'lucide-react';
 import { Note, User, Student } from '../types';
 import Header from './Header';
 import FloatingHeaderCard from './FloatingHeaderCard';
 import { supabase } from '../lib/supabase';
 import { useActiveSchedule } from '../hooks/useActiveSchedule';
 import { loadStudentSetoranLogs, loadStudentAttendanceLogs } from '../services/appData';
-import quranIllustrationUrl from '../assets/quran_illustration.png';
 
 interface DashboardModernProps {
     user: User;
@@ -502,6 +501,40 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
         };
     }, [students]);
 
+    // Checklist state for "Pengingat Hari Ini"
+    const [checklist, setChecklist] = useState<any[]>(() => {
+        const saved = localStorage.getItem('tqa_dashboard_checklist');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        return [
+            { id: 1, text: 'Jangan lupa input setoran harian', subtitle: 'Minimal sebelum jam 20.00', checked: true },
+            { id: 2, text: 'Pantau siswa yang belum setor H-1', subtitle: '0 siswa perlu follow-up', checked: true, isBelumSetorLink: true },
+            { id: 3, text: 'Cek catatan murojaah kelas 5B', subtitle: 'Surah Al-Qadr s.d. Az-Zalzalah', checked: false }
+        ];
+    });
+
+    // Update the checklist subtitle dynamically with latest metrics
+    useEffect(() => {
+        setChecklist(prev => prev.map(item => {
+            if (item.isBelumSetorLink) {
+                const countText = metrics.belumSetor === "Semua Sudah Setor" ? "0" : metrics.belumSetor.replace(' Siswa', '');
+                return { ...item, subtitle: `${countText} siswa perlu follow-up` };
+            }
+            return item;
+        }));
+    }, [metrics.belumSetor]);
+
+    const handleToggleChecklist = (id: number) => {
+        const nextList = checklist.map(item => item.id === id ? { ...item, checked: !item.checked } : item);
+        setChecklist(nextList);
+        localStorage.setItem('tqa_dashboard_checklist', JSON.stringify(nextList));
+    };
+
 
 
     const getGharibDetailText = () => {
@@ -755,64 +788,109 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
             {/* Area Konten Scroll Mandiri */}
             <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-32 md:pt-6 -mx-4 sm:-mx-8 bg-slate-50 dark:bg-dark-bg">
                 <div className="flex flex-col gap-4 w-full px-4 md:px-0 lg:px-8">
-                    {/* ===== AREA BANNER ZAMRUD ===== */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 rounded-3xl p-6 md:p-8 shadow-md w-full min-h-[220px]">
-                        
-                        {/* Background Paper Texture & Blended Illustration Overlay */}
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] z-0"></div>
-                        
-                        <div className="absolute right-0 top-0 bottom-0 w-full md:w-1/2 pointer-events-none overflow-hidden select-none z-0">
-                            <img 
-                                src={quranIllustrationUrl} 
-                                alt="" 
-                                className="w-full h-full object-cover object-right mix-blend-screen opacity-70 md:opacity-85"
+                    {/* ===== BANNER & REMINDER ROW ===== */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full">
+                        {/* ===== AREA BANNER ZAMRUD ===== */}
+                        <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 rounded-3xl p-6 md:p-8 shadow-md w-full min-h-[220px] flex flex-col justify-between">
+                            
+                            {/* Islamic Geometric Pattern Background Overlay */}
+                            <div 
+                                className="absolute inset-0 opacity-[0.06] pointer-events-none z-0"
                                 style={{
-                                    maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
-                                    WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)'
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.8' stroke-opacity='1'%3E%3Cpath d='M40 0 L52 28 L80 40 L52 52 L40 80 L28 52 L0 40 L28 28 Z'/%3E%3Cpath d='M0 0 L28 28 M80 0 L52 28 M80 80 L52 52 M0 80 L28 52'/%3E%3Ccircle cx='40' cy='40' r='12'/%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Cpolygon points='40,12 59,20 68,40 59,60 40,68 21,60 12,40 21,20'/%3E%3C/g%3E%3C/svg%3E")`,
+                                    backgroundSize: '80px 80px',
+                                    backgroundRepeat: 'repeat'
                                 }}
-                            />
+                            ></div>
+                            
+                            {/* Content Container */}
+                            <div className="relative z-10 flex-1 flex flex-col gap-4 text-white w-full">
+                                <div>
+                                    <span className="text-[11px] md:text-xs font-semibold tracking-wider uppercase opacity-85 block mb-1">Selamat Datang Kembali,</span>
+                                    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">
+                                        {user.name.split(' ')[0].toLowerCase().startsWith('ustadz') && user.name.split(' ').length > 1
+                                            ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]}`
+                                            : 'Ustadz/zah TQA'}
+                                    </h1>
+                                </div>
+                                
+                                <p className="text-emerald-100 text-xs md:text-sm max-w-xl md:max-w-2xl leading-relaxed font-medium">
+                                    {bannerText}
+                                </p>
+
+                                {/* Buttons row */}
+                                <div className="flex flex-wrap items-center gap-3 mt-1">
+                                    <button
+                                        onClick={() => onNavigate('input_setoran')}
+                                        className="flex items-center gap-2.5 px-6 py-3 bg-white text-emerald-800 hover:bg-emerald-50 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold shadow-sm cursor-pointer"
+                                    >
+                                        <div className="w-4 h-4 rounded-full bg-emerald-800 text-white flex items-center justify-center font-black text-[11px]">+</div>
+                                        <span>Input Setoran</span>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => setIsScheduleModalOpen(true)}
+                                        className="flex items-center gap-2.5 px-6 py-3 bg-transparent border border-white/25 hover:border-white/60 hover:bg-white/5 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold text-white cursor-pointer"
+                                    >
+                                        <Calendar size={14} className="opacity-95" />
+                                        <span>Lihat Jadwal</span>
+                                    </button>
+                                </div>
+
+                                {/* Calligraphy Quote Box */}
+                                <div className="mt-2 p-4 bg-emerald-950/20 border border-emerald-500/10 rounded-2xl shadow-inner backdrop-blur-xs w-full">
+                                    <p className="font-serif text-sm md:text-base text-emerald-50 tracking-wide leading-relaxed italic text-center md:text-left">
+                                        “Sebaik-baik kalian adalah yang belajar Al-Qur'an dan mengajarkannya.”
+                                        <span className="not-italic text-xs md:text-sm text-emerald-300 ml-2 font-sans font-semibold opacity-90">— HR. Bukhari</span>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Content Container */}
-                        <div className="relative z-10 flex-1 flex flex-col gap-4 text-white w-full">
-                            <div>
-                                <span className="text-[11px] md:text-xs font-semibold tracking-wider uppercase opacity-85 block mb-1">Selamat Datang Kembali,</span>
-                                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">
-                                    {user.name.split(' ')[0].toLowerCase().startsWith('ustadz') && user.name.split(' ').length > 1
-                                        ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]}`
-                                        : 'Ustadz/zah TQA'}
-                                </h1>
-                            </div>
-                            
-                            <p className="text-emerald-100 text-xs md:text-sm max-w-xl md:max-w-2xl leading-relaxed font-medium">
-                                {bannerText}
-                            </p>
-
-                            {/* Buttons row */}
-                            <div className="flex flex-wrap items-center gap-3 mt-1">
-                                <button
-                                    onClick={() => onNavigate('input_setoran')}
-                                    className="flex items-center gap-2.5 px-6 py-3 bg-white text-emerald-800 hover:bg-emerald-50 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold shadow-sm cursor-pointer"
-                                >
-                                    <div className="w-4 h-4 rounded-full bg-emerald-800 text-white flex items-center justify-center font-black text-[11px]">+</div>
-                                    <span>Input Setoran</span>
-                                </button>
-                                
-                                <button
-                                    onClick={() => setIsScheduleModalOpen(true)}
-                                    className="flex items-center gap-2.5 px-6 py-3 bg-transparent border border-white/25 hover:border-white/60 hover:bg-white/5 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold text-white cursor-pointer"
-                                >
-                                    <Calendar size={14} className="opacity-95" />
-                                    <span>Lihat Jadwal</span>
-                                </button>
+                        {/* Pengingat Hari Ini Section (Beside the Welcome Card on Desktop) */}
+                        <div className="bg-white dark:bg-[#121F18] border border-slate-100 dark:border-white/5 rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-5 w-full">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white">Pengingat Hari Ini</h3>
+                                <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                                    <Bell size={18} />
+                                </div>
                             </div>
 
-                            {/* Calligraphy Quote Box */}
-                            <div className="mt-2 p-4 bg-emerald-950/20 border border-emerald-500/10 rounded-2xl shadow-inner backdrop-blur-xs w-full">
-                                <p className="font-serif text-sm md:text-base text-emerald-50 tracking-wide leading-relaxed italic text-center md:text-left">
-                                    “Sebaik-baik kalian adalah yang belajar Al-Qur'an dan mengajarkannya.”
-                                    <span className="not-italic text-xs md:text-sm text-emerald-300 ml-2 font-sans font-semibold opacity-90">— HR. Bukhari</span>
-                                </p>
+                            <div className="flex flex-col gap-4">
+                                {checklist.map((item) => (
+                                    <div 
+                                        key={item.id}
+                                        onClick={() => handleToggleChecklist(item.id)}
+                                        className="flex items-start gap-4 cursor-pointer select-none group"
+                                    >
+                                        {/* Custom Checkbox */}
+                                        <div className={`mt-0.5 w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                                            item.checked 
+                                                ? 'bg-emerald-600 border-emerald-600 text-white' 
+                                                : 'border-slate-200 dark:border-white/10 bg-transparent group-hover:border-slate-350 dark:group-hover:border-white/20'
+                                        }`}>
+                                            {item.checked && (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                            )}
+                                        </div>
+
+                                        {/* Text Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className={`text-sm font-semibold transition-all ${
+                                                item.checked 
+                                                    ? 'text-slate-450 dark:text-slate-500 line-through' 
+                                                    : 'text-slate-700 dark:text-slate-200'
+                                            }`}>
+                                                {item.text}
+                                            </h4>
+                                            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-1">
+                                                {item.subtitle}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
