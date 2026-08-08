@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Lock, ArrowRight, GraduationCap, School, ChevronDown, Users } from 'lucide-react';
 import { Student, User as UserType } from '../types';
 import logoUrl from '../assets/logo.png';
+import teacherAvatar from '../assets/teacher_avatar.png';
 
 interface CustomDropdownProps {
   value: string;
@@ -135,7 +136,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, students }) => {
         mockUser = {
           name: 'Ustadz/zah TQA Kelas 5&6',
           role: 'teacher',
-          avatar: savedTeacherAvatar || 'https://picsum.photos/seed/ustadz/100/100'
+          avatar: savedTeacherAvatar || teacherAvatar
         };
       } else {
         // Find selected student details

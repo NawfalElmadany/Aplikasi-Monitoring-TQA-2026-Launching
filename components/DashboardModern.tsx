@@ -36,6 +36,15 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const localGharibList = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem('tqa_gharib_entries') || '[]');
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    }, []);
+
     const isStudent = user.role === 'student' || user.role === 'siswa';
 
     // Student specific states
@@ -199,16 +208,11 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     const getMaterialForClass = (className: string) => {
         const cleanName = className.replace('Kelas ', '');
         if (cleanName === '6D') {
-            try {
-                const localGharib = JSON.parse(localStorage.getItem('tqa_gharib_entries') || '[]');
-                const entry = localGharib.find((e: any) => e.className === cleanName || e.class_name === cleanName);
-                if (entry) {
-                    const page = entry.nomor_halaman || entry.materi_halaman || '';
-                    const mat = entry.nama_materi || entry.material || '';
-                    return page ? `Gharib Hal. ${page} - ${mat}` : mat || 'Materi Gharib';
-                }
-            } catch (e) {
-                console.error(e);
+            const entry = localGharibList.find((e: any) => e.className === cleanName || e.class_name === cleanName);
+            if (entry) {
+                const page = entry.nomor_halaman || entry.materi_halaman || '';
+                const mat = entry.nama_materi || entry.material || '';
+                return page ? `Gharib Hal. ${page} - ${mat}` : mat || 'Materi Gharib';
             }
             return 'Gharib Hal. 21-28';
         }
@@ -1030,7 +1034,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
                     {/* Schedules List with Timeline */}
                     {hariAktif && (
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-2.5 sm:gap-4">
                             {(() => {
                                 const schedules = jadwalMengajar[hariAktif as keyof typeof jadwalMengajar] || [];
                                 const total = schedules.length;
@@ -1049,19 +1053,19 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                                 className="flex items-stretch gap-0"
                                             >
                                                 {/* Left Side: Time Card Cell */}
-                                                <div className={`w-20 shrink-0 flex flex-col items-center justify-center bg-white dark:bg-[#16271E]/40 border-slate-100 dark:border-[#1F382B]/35 ${
+                                                <div className={`w-16 sm:w-20 shrink-0 flex flex-col items-center justify-center bg-white dark:bg-[#16271E]/40 border-slate-100 dark:border-[#1F382B]/35 ${
                                                     idx === 0 ? 'border-t border-l border-r rounded-t-2xl' : 'border-l border-r'
                                                 } ${
                                                     idx === total - 1 ? 'border-b border-l border-r rounded-b-2xl' : ''
                                                 } ${
                                                     total === 1 ? 'border-t border-b rounded-2xl' : ''
-                                                } py-3`}>
+                                                } py-2 sm:py-3`}>
                                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-none">{startTime}</span>
                                                     <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5 leading-none">{endTime}</span>
                                                 </div>
 
                                                 {/* Middle Column: Timeline Connector */}
-                                                <div className="w-10 shrink-0 flex items-center justify-center relative">
+                                                <div className="w-8 sm:w-10 shrink-0 flex items-center justify-center relative">
                                                     {/* Horizontal connector line */}
                                                     <div className="absolute left-0 right-0 h-px bg-slate-100 dark:bg-[#1A2E24]"></div>
                                                     
@@ -1083,7 +1087,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                                 {/* Right Side: Class Card Box */}
                                                 <div 
                                                     onClick={() => setIsScheduleModalOpen(true)}
-                                                    className={`flex-1 flex justify-between items-center p-4 rounded-2xl border transition-all cursor-pointer ${
+                                                    className={`flex-1 flex justify-between items-center p-3 sm:p-4 rounded-2xl border transition-all cursor-pointer ${
                                                         isActive 
                                                             ? 'bg-emerald-50/40 dark:bg-emerald-950/15 border-emerald-500/60 dark:border-emerald-500/40 ring-1 ring-emerald-500/10' 
                                                             : 'bg-[#F8FAFC]/50 dark:bg-[#16271E]/30 border-slate-100 dark:border-[#1F382B]/30 hover:bg-[#F8FAFC] dark:hover:bg-[#16271E]/50'
@@ -1098,9 +1102,6 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
 
                                                     {/* Badges */}
                                                     <div className="flex items-center gap-2 shrink-0">
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/10">
-                                                            {schedule.className}
-                                                        </span>
                                                         {schedule.label && (
                                                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-white/5">
                                                                 {schedule.label}

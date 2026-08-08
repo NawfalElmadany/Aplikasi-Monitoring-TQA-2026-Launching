@@ -1,6 +1,7 @@
 import { getAvatarUrl } from './utils/avatar';
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import logoUrl from './assets/logo.png';
+import teacherAvatar from './assets/teacher_avatar.png';
 import { BookOpen, FileText, Calendar, ChevronDown, AlertCircle, Activity, Plus, Download, CheckCircle2, LayoutDashboard, Users, Settings, History, Scroll, RotateCw, PlusCircle, User as UserIcon, Menu, LogOut, MessageSquare, ClipboardCheck } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -674,12 +675,17 @@ function App() {
       const savedUser = localStorage.getItem('tqa_user');
       if (savedUser) {
          try {
-            const parsed = JSON.parse(savedUser);
-            if (parsed && (parsed.name === 'Ustadz Hanif' || parsed.name === 'Pengampu TQA Kelas 5&6' || parsed.name === 'Pengampu')) {
-               parsed.name = 'Ustadz/zah TQA Kelas 5&6';
-               localStorage.setItem('tqa_user', JSON.stringify(parsed));
-            }
-            setUser(parsed);
+             const parsed = JSON.parse(savedUser);
+             if (parsed) {
+                if (parsed.name === 'Ustadz Hanif' || parsed.name === 'Pengampu TQA Kelas 5&6' || parsed.name === 'Pengampu') {
+                   parsed.name = 'Ustadz/zah TQA Kelas 5&6';
+                }
+                if (parsed.role === 'teacher' && (!parsed.avatar || parsed.avatar.includes('picsum.photos') || parsed.avatar.includes('api.dicebear.com'))) {
+                   parsed.avatar = teacherAvatar;
+                }
+                localStorage.setItem('tqa_user', JSON.stringify(parsed));
+             }
+             setUser(parsed);
          } catch (error) {
             console.error('Failed to parse saved user:', error);
          }
