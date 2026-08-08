@@ -6,6 +6,7 @@ import FloatingHeaderCard from './FloatingHeaderCard';
 import { supabase } from '../lib/supabase';
 import { useActiveSchedule } from '../hooks/useActiveSchedule';
 import { loadStudentSetoranLogs, loadStudentAttendanceLogs } from '../services/appData';
+import quranIllustrationUrl from '../assets/quran_illustration.png';
 
 interface DashboardModernProps {
     user: User;
@@ -755,27 +756,66 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
             <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 pt-32 md:pt-6 -mx-4 sm:-mx-8 bg-slate-50 dark:bg-dark-bg">
                 <div className="flex flex-col gap-4 w-full px-4 md:px-0 lg:px-8">
                     {/* ===== AREA BANNER ZAMRUD ===== */}
-                    <div className="relative overflow-hidden bg-gradient-to-r from-emerald-700 to-teal-500 rounded-2xl p-5 md:p-8 shadow-md w-full">
-                    {/* Ornamen Abstrak 1: Cahaya berpendar di kanan atas */}
-                    <div className="absolute top-0 right-0 -mr-12 -mt-12 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl z-0 pointer-events-none"></div>
-                    
-                    {/* Ornamen Abstrak 2: Garis lingkaran di kanan bawah */}
-                    <div className="absolute -bottom-10 right-24 w-48 h-48 rounded-full border-4 border-white opacity-10 z-0 pointer-events-none"></div>
+                    <div className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 rounded-3xl p-6 md:p-8 shadow-md w-full min-h-[220px]">
+                        
+                        {/* Background Paper Texture & Blended Illustration Overlay */}
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] z-0"></div>
+                        
+                        <div className="absolute right-0 top-0 bottom-0 w-full md:w-1/2 pointer-events-none overflow-hidden select-none z-0">
+                            <img 
+                                src={quranIllustrationUrl} 
+                                alt="" 
+                                className="w-full h-full object-cover object-right mix-blend-screen opacity-70 md:opacity-85"
+                                style={{
+                                    maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)',
+                                    WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%)'
+                                }}
+                            />
+                        </div>
 
-                    {/* Konten Teks Banner */}
-                    <div className="relative z-10">
-                        <h1 className="text-2xl font-bold text-white mb-2">
-                            Selamat Datang Kembali, <span className="text-amber-400">
-                                {user.name.split(' ')[0].toLowerCase().startsWith('ustadz') && user.name.split(' ').length > 1
-                                    ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]}`
-                                    : user.name.split(' ')[0]}
-                            </span>
-                        </h1>
-                        <p className="text-emerald-50 text-xs md:text-sm max-w-xl line-clamp-2">
-                            {bannerText}
-                        </p>
+                        {/* Content Container */}
+                        <div className="relative z-10 flex-1 flex flex-col gap-4 text-white w-full">
+                            <div>
+                                <span className="text-[11px] md:text-xs font-semibold tracking-wider uppercase opacity-85 block mb-1">Selamat Datang Kembali,</span>
+                                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">
+                                    {user.name.split(' ')[0].toLowerCase().startsWith('ustadz') && user.name.split(' ').length > 1
+                                        ? `${user.name.split(' ')[0]} ${user.name.split(' ')[1]}`
+                                        : 'Ustadz/zah TQA'}
+                                </h1>
+                            </div>
+                            
+                            <p className="text-emerald-100 text-xs md:text-sm max-w-xl md:max-w-2xl leading-relaxed font-medium">
+                                {bannerText}
+                            </p>
+
+                            {/* Buttons row */}
+                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                                <button
+                                    onClick={() => onNavigate('input_setoran')}
+                                    className="flex items-center gap-2.5 px-6 py-3 bg-white text-emerald-800 hover:bg-emerald-50 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold shadow-sm cursor-pointer"
+                                >
+                                    <div className="w-4 h-4 rounded-full bg-emerald-800 text-white flex items-center justify-center font-black text-[11px]">+</div>
+                                    <span>Input Setoran</span>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setIsScheduleModalOpen(true)}
+                                    className="flex items-center gap-2.5 px-6 py-3 bg-transparent border border-white/25 hover:border-white/60 hover:bg-white/5 active:scale-95 transition-all rounded-2xl text-xs md:text-sm font-extrabold text-white cursor-pointer"
+                                >
+                                    <Calendar size={14} className="opacity-95" />
+                                    <span>Lihat Jadwal</span>
+                                </button>
+                            </div>
+
+                            {/* Calligraphy Quote Box */}
+                            <div className="mt-2 p-4 bg-emerald-950/20 border border-emerald-500/10 rounded-2xl shadow-inner backdrop-blur-xs w-full">
+                                <p className="font-serif text-sm md:text-base text-emerald-50 tracking-wide leading-relaxed italic text-center md:text-left">
+                                    “Sebaik-baik kalian adalah yang belajar Al-Qur'an dan mengajarkannya.”
+                                    <span className="not-italic text-xs md:text-sm text-emerald-300 ml-2 font-sans font-semibold opacity-90">— HR. Bukhari</span>
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
                 {/* Grid Metrik Operasional Utama */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">

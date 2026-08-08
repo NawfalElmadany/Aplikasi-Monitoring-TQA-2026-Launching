@@ -77,6 +77,33 @@ function App() {
       }, 3000);
    };
 
+   const APP_VERSION = '1.0.2'; // Matches version.json
+
+   // Check for application updates/version changes
+   useEffect(() => {
+      const checkForUpdates = async () => {
+         try {
+            // Cache-busting query parameter to get the latest version.json from the server
+            const response = await fetch(`/version.json?t=${Date.now()}`);
+            if (response.ok) {
+               const data = await response.json();
+               if (data && data.version && data.version !== APP_VERSION) {
+                  setIsUpdateAvailable(true);
+               }
+            }
+         } catch (error) {
+            console.warn('Gagal memeriksa pembaruan aplikasi:', error);
+         }
+      };
+
+      // Check immediately on startup
+      void checkForUpdates();
+
+      // Poll for updates every 20 seconds
+      const interval = setInterval(checkForUpdates, 20000);
+      return () => clearInterval(interval);
+   }, []);
+
 
    const isSidebarOpen = isSidebarOpenState;
    const setIsSidebarOpen = (open: boolean | ((prev: boolean) => boolean)) => {
