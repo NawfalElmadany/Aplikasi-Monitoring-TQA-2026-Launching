@@ -36,7 +36,7 @@ const UnsubmittedListView: React.FC<UnsubmittedListViewProps> = ({ students }) =
                         key={className}
                         onClick={() => setSelectedClass(className)}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedClass === className
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                            ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >

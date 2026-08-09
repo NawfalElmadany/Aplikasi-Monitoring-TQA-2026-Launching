@@ -337,7 +337,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left ${activeTab === tab.id
-                                ? 'bg-emerald-600 text-white shadow-sm'
+                                ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-sm font-bold'
                                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200'
                                 }`}
                         >

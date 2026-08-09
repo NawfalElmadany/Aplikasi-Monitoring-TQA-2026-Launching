@@ -425,7 +425,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                     onClick={() => setSelectedClass(cls)}
                                     className={`flex-1 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer
                                         ${selectedClass === cls
-                                            ? 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                            ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30 font-extrabold'
                                             : 'bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/50 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                 >
                                     {cls === 'Semua' ? 'Semua Kelas' : `Kelas ${cls}`}
@@ -441,7 +441,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                     onClick={() => setSelectedTeacher(t)}
                                     className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer
                                         ${selectedTeacher === t
-                                            ? 'bg-emerald-600 dark:bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                            ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30 font-extrabold'
                                             : 'bg-slate-50 dark:bg-[#0C1A13] border border-slate-200/50 dark:border-[#1E382B] text-slate-600 dark:text-[#9FB8AB] hover:bg-slate-100 dark:hover:bg-[#16291F]'}`}
                                 >
                                     {t === 'Semua' ? 'Semua Guru' : t.replace('Ustadz ', 'Ust. ').replace('Ustadzah ', 'Ustd. ')}
@@ -605,7 +605,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             <button
                                                 onClick={() => setSetoranType('Hafalan')}
                                                 className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 cursor-pointer ${setoranType === 'Hafalan'
-                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                                    ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30 font-extrabold'
                                                     : 'text-slate-600 dark:text-[#8BA398] hover:text-slate-900 dark:hover:text-white font-bold'}`}
                                             >
                                                 Hafalan
@@ -613,7 +613,7 @@ const SetoranPage: React.FC<SetoranPageProps> = ({
                                             <button
                                                 onClick={() => setSetoranType('Tartili')}
                                                 className={`flex-1 py-2.5 text-xs font-bold rounded-full transition-all duration-300 relative z-10 cursor-pointer ${setoranType === 'Tartili'
-                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-extrabold'
+                                                    ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30 font-extrabold'
                                                     : 'text-slate-600 dark:text-[#8BA398] hover:text-slate-900 dark:hover:text-white font-bold'}`}
                                             >
                                                 Tartili

@@ -356,7 +356,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Column 1 Skeleton: Sudah Setor */}
             <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl pt-3 pb-5 px-5 flex flex-col gap-4">
-                <div className="flex items-center justify-center bg-emerald-600 w-full py-3 px-4 rounded-xl shadow-sm mb-4">
+                <div className="flex items-center justify-center bg-gradient-to-r from-emerald-800 to-emerald-600 w-full py-3 px-4 rounded-xl shadow-sm mb-4">
                     <div className="h-6 w-36 bg-emerald-500 rounded-full animate-pulse"></div>
                 </div>
                 <div className="space-y-3">
@@ -470,7 +470,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                             className={`
                                 px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap
                                 ${selectedClass === cls
-                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                    ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-md shadow-emerald-800/30'
                                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                                 }
                             `}
@@ -490,7 +490,7 @@ const MonitoringPage: React.FC<MonitoringPageProps> = ({
                     <div className={`grid grid-cols-1 gap-6 lg:flex lg:flex-1 lg:gap-8 transition-opacity duration-300 lg:overflow-hidden ${isFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                         {/* Column 1: Sudah Setor */}
                         <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl pt-3 pb-5 px-5 flex flex-col gap-4 lg:h-full lg:w-full lg:overflow-hidden">
-                            <div className="flex-none flex items-center justify-center bg-emerald-600 w-full py-3 px-4 rounded-xl shadow-sm mb-4">
+                            <div className="flex-none flex items-center justify-center bg-gradient-to-r from-emerald-800 to-emerald-600 w-full py-3 px-4 rounded-xl shadow-sm mb-4">
                                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
                                     Sudah Setor

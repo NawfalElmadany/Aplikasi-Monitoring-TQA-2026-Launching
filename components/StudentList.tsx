@@ -159,7 +159,7 @@ const StudentList: React.FC<StudentListProps> = ({
               className={`
                 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap
                 ${selectedClass === cls
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-sm font-bold'
                   : 'bg-white dark:bg-dark-card text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:bg-dark-card-hover hover:border-emerald-200'
                 }
               `}
@@ -182,7 +182,7 @@ const StudentList: React.FC<StudentListProps> = ({
               className={`
                 px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap
                 ${selectedTeacher === teacher
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-emerald-800 to-emerald-600 text-white shadow-sm font-bold'
                   : 'bg-white dark:bg-dark-card text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:bg-dark-card-hover hover:border-emerald-200'
                 }
               `}
