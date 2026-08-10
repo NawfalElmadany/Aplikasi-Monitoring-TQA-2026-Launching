@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle, RotateCw } from 'lucide-react';
+import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle, RotateCw, Bell } from 'lucide-react';
 import { User, AcademicYear, Target, Teacher } from '../types';
 import TeacherModal from './TeacherModal';
 import Header from './Header';
@@ -66,6 +66,23 @@ interface SettingsPageProps {
     onCheckForUpdates?: () => void;
 }
 
+const VAPID_PUBLIC_KEY = 'BGE25JujCMx_cliddjOArNL459tKtWIKw3zQzvs4wFBFr-ZrvVEFwxvEBRQ4zrFT3BDCOyVCOiLAxboPo9z-SlI';
+
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 const SettingsPage: React.FC<SettingsPageProps> = ({
     user,
     onSaveProfile,
@@ -114,6 +131,104 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
+
+    const [notificationPermission, setNotificationPermission] = useState<string>(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            return Notification.permission;
+        }
+        return 'default';
+    });
+    const [isTestingNotification, setIsTestingNotification] = useState(false);
+    const [isSubscribing, setIsSubscribing] = useState(false);
+
+    const handleRequestPermission = async () => {
+        if (!('Notification' in window)) {
+            alert('Browser Anda tidak mendukung notifikasi sistem.');
+            return;
+        }
+        
+        setIsSubscribing(true);
+        try {
+            const permission = await Notification.requestPermission();
+            setNotificationPermission(permission);
+            
+            if (permission === 'granted') {
+                const reg = await navigator.serviceWorker.ready;
+                
+                // Subscribe to push manager with VAPID key
+                const subscription = await reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                
+                console.log('Push subscription generated successfully:', subscription);
+                
+                // Save subscription to Supabase if active
+                if (supabase && user?.id) {
+                    const { error: dbError } = await supabase
+                        .from('push_subscriptions')
+                        .upsert({
+                            user_id: user.id,
+                            user_name: user.name,
+                            subscription_json: JSON.parse(JSON.stringify(subscription))
+                        }, { onConflict: 'user_id' });
+                        
+                    if (dbError) {
+                        console.error('Error saving subscription to Supabase:', dbError);
+                        alert('Gagal menyimpan langganan notifikasi ke database: ' + dbError.message);
+                    } else {
+                        console.log('Push subscription successfully stored in Supabase.');
+                    }
+                } else {
+                    localStorage.setItem('tqa_push_subscription', JSON.stringify(subscription));
+                    console.log('Stored push subscription in localStorage (fallback).');
+                }
+            }
+        } catch (error) {
+            console.error('Error requesting notification permission:', error);
+            alert('Gagal mengaktifkan notifikasi push: ' + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            setIsSubscribing(false);
+        }
+    };
+
+    const handleTestNotification = () => {
+        if (notificationPermission !== 'granted') {
+            alert('Tolong aktifkan izin notifikasi terlebih dahulu.');
+            return;
+        }
+        
+        setIsTestingNotification(true);
+        
+        setTimeout(async () => {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    if (reg.active) {
+                        reg.active.postMessage({
+                            action: 'showNotification',
+                            title: 'SiTQA - Uji Coba Berhasil!',
+                            body: 'Hebat! Notifikasi tetap muncul meskipun aplikasi sedang tidak aktif.'
+                        });
+                    } else {
+                        new Notification('SiTQA - Uji Coba Berhasil!', {
+                            body: 'Hebat! Notifikasi tetap muncul meskipun aplikasi sedang tidak aktif.',
+                            icon: '/logo.png'
+                        });
+                    }
+                } else {
+                    new Notification('SiTQA - Uji Coba Berhasil!', {
+                        body: 'Hebat! Notifikasi tetap muncul meskipun aplikasi sedang tidak aktif.',
+                        icon: '/logo.png'
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to trigger notification:', e);
+            } finally {
+                setIsTestingNotification(false);
+            }
+        }, 5000);
+    };
 
     useEffect(() => {
         if (user) {
@@ -307,6 +422,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 
     const tabs = [
         { id: 'profile', label: 'Profil Pengguna', icon: UserIcon },
+        { id: 'notifications', label: 'Notifikasi & Push', icon: Bell },
         { id: 'academic', label: 'Tahun Ajaran', icon: Calendar },
         { id: 'targets', label: 'Target Hafalan', icon: BookOpen },
         { id: 'teachers', label: 'Manajemen Guru', icon: Users },
@@ -477,6 +593,89 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                                         </>
                                     )}
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Notifications Section */}
+                    {activeTab === 'notifications' && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6 animate-in fade-in duration-300">
+                            <div className="border-b border-gray-100 pb-4">
+                                <h3 className="text-lg font-bold text-gray-800">Pengaturan Notifikasi & Push</h3>
+                                <p className="text-slate-500 text-xs mt-1">Dapatkan notifikasi catatan dan setoran santri di perangkat Anda</p>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Permission Status card */}
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <h4 className="font-bold text-slate-800 text-sm">Status Notifikasi</h4>
+                                        <p className="text-xs text-slate-500">
+                                            {notificationPermission === 'granted'
+                                                ? 'Izin aktif. Anda akan menerima notifikasi otomatis.'
+                                                : notificationPermission === 'denied'
+                                                ? 'Izin ditolak. Silakan aktifkan kembali di pengaturan browser Anda.'
+                                                : 'Izin belum diatur. Aktifkan untuk menerima pembaruan.'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        {notificationPermission === 'granted' ? (
+                                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-3 py-1.5 rounded-full font-bold">
+                                                Aktif
+                                            </span>
+                                        ) : notificationPermission === 'denied' ? (
+                                            <span className="bg-rose-50 text-rose-700 border border-rose-200 text-xs px-3 py-1.5 rounded-full font-bold">
+                                                Ditolak
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={handleRequestPermission}
+                                                disabled={isSubscribing}
+                                                className="px-4 py-2 bg-gradient-to-r from-emerald-800 to-emerald-600 text-white rounded-xl text-xs font-bold shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                                            >
+                                                {isSubscribing ? 'Mengaktifkan...' : 'Aktifkan'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Mock Tester card */}
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-white space-y-4">
+                                    <div className="space-y-1">
+                                        <h4 className="font-bold text-slate-800 text-sm">Uji Coba Notifikasi Mandiri</h4>
+                                        <p className="text-xs text-slate-500">
+                                            Tekan tombol di bawah, lalu segera **minimalkan browser Anda** atau buka tab lain. Notifikasi akan muncul otomatis setelah jeda 5 detik.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <button
+                                            onClick={handleTestNotification}
+                                            disabled={isTestingNotification || notificationPermission !== 'granted'}
+                                            className={`px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer ${
+                                                notificationPermission === 'granted'
+                                                    ? 'bg-slate-800 text-white hover:bg-slate-700 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50'
+                                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            {isTestingNotification ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                    <span>Mengirim dalam 5 detik...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Bell size={14} />
+                                                    <span>Uji Coba Notifikasi (Delay 5 Detik)</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        {notificationPermission !== 'granted' && (
+                                            <p className="text-[10px] text-rose-500 font-bold mt-2">
+                                                *Harap aktifkan status izin notifikasi di atas terlebih dahulu untuk memulai uji coba.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
