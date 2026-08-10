@@ -76,23 +76,23 @@ serve(async (req) => {
       const [startH, startM] = c.start.split(':').map(Number);
       const startTotalMinutes = startH * 60 + startM;
       
-      // Calculate delay/difference. 
-      // We trigger the notification if the class starts in exactly 10 minutes.
-      // (For flexibity, trigger if start is 9 to 11 minutes away to prevent cron timing edge cases)
+      // Trigger notification exactly when the class hours begin.
+      // Since the cron runs every 5 minutes and class starts are multiples of 5 minutes,
+      // a range of -2 to 2 minutes matches the start time perfectly.
       const diff = startTotalMinutes - currentTotalMinutes;
-      return diff >= 9 && diff <= 11;
+      return diff >= -2 && diff <= 2;
     });
 
     if (!upcomingClass) {
       return new Response(JSON.stringify({ 
         success: true, 
-        message: "Tidak ada jadwal mengajar terdekat (dalam 10 menit)." 
+        message: "Tidak ada jadwal kelas yang dimulai saat ini." 
       }), {
         headers: { "Content-Type": "application/json" }
       });
     }
 
-    console.log(`[Reminders] Upcoming class found: ${upcomingClass.class} starting at ${upcomingClass.start}`);
+    console.log(`[Reminders] Class starting now: ${upcomingClass.class} starting at ${upcomingClass.start}`);
 
     // Fetch all registered push subscriptions
     const { data: subscriptions, error } = await supabase
@@ -110,8 +110,8 @@ serve(async (req) => {
     }
 
     const payload = JSON.stringify({
-      title: "Jadwal Mengajar Segera Dimulai!",
-      body: `Ustadz/Ustadzah, bersiaplah. Pembelajaran di ${upcomingClass.class} akan dimulai dalam 10 menit (Pukul ${upcomingClass.start}).`,
+      title: "Waktu Mengajar Dimulai!",
+      body: `Ustadz/Ustadzah, jam pelajaran di ${upcomingClass.class} telah dimulai (${upcomingClass.start} - ${upcomingClass.end}). Silakan masuk kelas. Semangat!`,
       icon: "/logo.png",
       badge: "/logo.png",
       data: {
