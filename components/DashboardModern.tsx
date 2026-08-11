@@ -37,6 +37,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     const [isScrolled, setIsScrolled] = useState(false);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedClassDetail, setSelectedClassDetail] = useState<string | null>(null);
 
     const localGharibList = useMemo(() => {
         try {
@@ -259,6 +260,12 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
         const fullClassName = `Kelas ${activeClassId}`;
         return todaysActivities.find((a: ClassActivity) => a.className === fullClassName) || null;
     }, [activeClassId, todaysActivities]);
+
+    useEffect(() => {
+        if (activeClassId) {
+            setSelectedClassDetail(`Kelas ${activeClassId}`);
+        }
+    }, [activeClassId]);
  
     // Dynamic teaching schedule banner text based on time and day
     const bannerText = useMemo(() => {
@@ -922,7 +929,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                             </div>
                         </div>
                     </div>
-
+                    
                     {/* ===== CLASS ACTIVITIES CARD ===== */}
                     <div className="bg-white dark:bg-[#121F18] border border-slate-100 dark:border-white/5 rounded-3xl p-6 shadow-sm w-full space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
@@ -932,7 +939,7 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-slate-800 dark:text-white">Rencana Kegiatan Pembelajaran</h3>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Target/materi hafalan kelas hari ini ({currentDayOfWeek})</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Klik nama kelas untuk melihat rincian kegiatan pembelajaran</p>
                                 </div>
                             </div>
                             <button
@@ -943,47 +950,44 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                             </button>
                         </div>
 
-                        {activeClassActivity ? (
-                            /* Highlighted Active Class Activity */
-                            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/5 dark:to-transparent border border-emerald-500/20 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
-                                        Sedang Mengajar
-                                    </span>
-                                    <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-400">
-                                        Kelas {activeClassId}
-                                    </span>
-                                </div>
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                                    {activeClassActivity.activityText}
-                                </p>
-                            </div>
-                        ) : null}
-
-                        {/* List of other class activities for today */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {/* Minimalist Class Name Buttons */}
+                        <div className="flex flex-wrap items-center gap-2">
                             {['Kelas 5B', 'Kelas 5C', 'Kelas 5D', 'Kelas 6C', 'Kelas 6D'].map(cls => {
-                                if (activeClassId && cls === `Kelas ${activeClassId}`) return null;
+                                const hasActivityToday = (classActivities || []).some((a: ClassActivity) => 
+                                    a.className === cls && 
+                                    a.startDate <= todayString && 
+                                    a.endDate >= todayString && 
+                                    a.dayName === currentDayOfWeek &&
+                                    a.activityText && a.activityText.trim() !== ''
+                                );
+                                const isActiveClass = activeClassId && cls === `Kelas ${activeClassId}`;
                                 
-                                const act = todaysActivities.find((a: ClassActivity) => a.className === cls);
                                 return (
-                                    <div key={cls} className="p-3.5 rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] space-y-1.5">
-                                        <h4 className="text-xs font-black text-slate-700 dark:text-slate-350">{cls}</h4>
-                                        <p className={`text-xs ${act ? 'text-slate-600 dark:text-slate-300 font-medium' : 'text-slate-300 dark:text-slate-650 italic'}`}>
-                                            {act ? act.activityText : 'Belum ada kegiatan dijadwalkan'}
-                                        </p>
-                                    </div>
+                                    <button
+                                        key={cls}
+                                        onClick={() => setSelectedClassDetail(cls)}
+                                        className={`relative px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-200 border cursor-pointer flex items-center gap-1.5 ${
+                                            isActiveClass
+                                                ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-250 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                                                : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-slate-600 dark:text-slate-350 hover:border-emerald-300 dark:hover:border-emerald-500/30'
+                                        }`}
+                                    >
+                                        {isActiveClass && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        )}
+                                        <span>{cls}</span>
+                                        {hasActivityToday && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        )}
+                                        {isActiveClass && (
+                                            <span className="bg-emerald-600/10 text-[8px] font-black uppercase px-1 py-0.2 rounded leading-none text-emerald-800 dark:text-emerald-400">
+                                                Aktif
+                                            </span>
+                                        )}
+                                    </button>
                                 );
                             })}
                         </div>
-
-                        {todaysActivities.length === 0 && !activeClassActivity && (
-                            <div className="py-4 text-center">
-                                <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-                                    Belum ada rencana kegiatan yang diinput untuk pekan ini.
-                                </p>
-                            </div>
-                        )}
                     </div>
 
                 {/* Grid Metrik Operasional Utama */}
@@ -1221,6 +1225,114 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                 </div>
             </div>
         </div>
+
+            {/* Modal Detail Rencana Kegiatan Kelas */}
+            {selectedClassDetail && (
+                <div 
+                    onClick={() => setSelectedClassDetail(null)}
+                    className="fixed inset-0 z-[200] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white dark:bg-[#16271E] rounded-2xl w-full max-w-md p-6 shadow-2xl relative border border-slate-100 dark:border-dark-border animate-in zoom-in-95 duration-200"
+                    >
+                        {/* Header Close button */}
+                        <button
+                            onClick={() => setSelectedClassDetail(null)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-full hover:bg-slate-100 dark:hover:bg-dark-card-hover transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-2 mb-4">
+                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+                                Rencana Kegiatan Pekan Ini
+                            </h3>
+                            <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
+                                {selectedClassDetail}
+                            </span>
+                        </div>
+
+                        {/* Subtitle / date range */}
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mb-4 font-semibold">
+                            Periode: {(() => {
+                                const activities = (classActivities || []).filter(a => a.className === selectedClassDetail);
+                                if (activities.length > 0) {
+                                    const first = activities[0];
+                                    try {
+                                        const formatD = (dStr: string) => {
+                                            const parts = dStr.split('-');
+                                            return `${parts[2]}/${parts[1]}`;
+                                        };
+                                        return `${formatD(first.startDate)} s.d. ${formatD(first.endDate)}`;
+                                    } catch (e) {
+                                        return `${first.startDate} s.d. ${first.endDate}`;
+                                    }
+                                }
+                                return 'Pekan Ini';
+                            })()}
+                        </p>
+
+                        {/* UI Timeline Rencana Kegiatan Vertikal */}
+                        <div className="flex flex-col gap-3">
+                            {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map((day, index) => {
+                                const act = (classActivities || []).find(a => 
+                                    a.className === selectedClassDetail && 
+                                    a.startDate <= todayString && 
+                                    a.endDate >= todayString && 
+                                    a.dayName === day
+                                );
+                                const isToday = day === currentDayOfWeek;
+                                const dayNum = String(index + 1).padStart(2, '0');
+                                
+                                return (
+                                    <div 
+                                        key={day} 
+                                        className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                                            isToday 
+                                                ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-500/30' 
+                                                : 'bg-white dark:bg-dark-card border-slate-100 dark:border-dark-border hover:bg-slate-50/50 dark:hover:bg-dark-card-hover'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                                            {/* Day index number */}
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                                                isToday 
+                                                    ? 'bg-emerald-500 text-white' 
+                                                    : 'bg-slate-100 dark:bg-dark-card-hover text-slate-500 dark:text-slate-450'
+                                            }`}>
+                                                {dayNum}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className={`text-sm font-bold ${
+                                                    isToday ? 'text-emerald-900 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-350'
+                                                }`}>
+                                                    {day}
+                                                </p>
+                                                <p className={`text-xs mt-1 leading-relaxed break-words whitespace-pre-line ${
+                                                    act && act.activityText && act.activityText.trim() !== ''
+                                                        ? 'text-slate-500 dark:text-[#8BA398] font-semibold'
+                                                        : 'text-slate-300 dark:text-slate-655 italic font-medium'
+                                                }`}>
+                                                    {act && act.activityText && act.activityText.trim() !== '' 
+                                                        ? act.activityText 
+                                                        : 'Belum ada kegiatan dijadwalkan'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {isToday && (
+                                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                                                Hari Ini
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
             {/* Modal Detail Jadwal */}
