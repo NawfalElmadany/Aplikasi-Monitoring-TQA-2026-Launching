@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord, PersonalMessage, TartiliEntry, UjianTartiliEntry } from '../types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, GharibEntry, AttendanceRecord, PersonalMessage, TartiliEntry, UjianTartiliEntry, ClassActivity } from '../types';
 
 
 type AppSettingsPayload = {
@@ -1323,6 +1323,128 @@ export const deleteUjianTartiliEntry = async (id: string | number): Promise<void
     if (error) throw error;
   } catch (error) {
     console.warn('Failed to delete Ujian Tartili from Supabase:', error);
+  }
+};
+
+export const loadClassActivities = async (): Promise<ClassActivity[]> => {
+  try {
+    const client = ensureSupabase();
+    const { data, error } = await client
+      .from('class_activities')
+      .select('*');
+
+    if (error) throw error;
+
+    const activities: ClassActivity[] = (data || []).map((row: any) => ({
+      id: row.id,
+      className: row.class_name,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      dayName: row.day_name,
+      activityText: row.activity_text
+    }));
+
+    localStorage.setItem('tqa_class_activities', JSON.stringify(activities));
+    return activities;
+  } catch (error) {
+    console.warn('Failed to load class activities from Supabase, returning cache:', error);
+    try {
+      return JSON.parse(localStorage.getItem('tqa_class_activities') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+};
+
+export const saveClassActivity = async (activity: ClassActivity): Promise<ClassActivity> => {
+  // Sync to local storage first
+  try {
+    const local = JSON.parse(localStorage.getItem('tqa_class_activities') || '[]');
+    const idx = local.findIndex((item: any) => 
+      item.className === activity.className && 
+      item.startDate === activity.startDate && 
+      item.dayName === activity.dayName
+    );
+    if (idx >= 0) {
+      local[idx] = activity;
+    } else {
+      local.push({ ...activity, id: activity.id || Math.random().toString() });
+    }
+    localStorage.setItem('tqa_class_activities', JSON.stringify(local));
+  } catch (e) {
+    console.error('Failed to save class activity locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const row = {
+      class_name: activity.className,
+      start_date: activity.startDate,
+      end_date: activity.endDate,
+      day_name: activity.dayName,
+      activity_text: activity.activityText,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await client
+      .from('class_activities')
+      .upsert(row, { onConflict: 'class_name,start_date,day_name' })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const saved: ClassActivity = {
+      id: data.id,
+      className: data.class_name,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      dayName: data.day_name,
+      activityText: data.activity_text
+    };
+
+    // Update local storage with real ID
+    const local = JSON.parse(localStorage.getItem('tqa_class_activities') || '[]');
+    const idx = local.findIndex((item: any) => 
+      item.className === saved.className && 
+      item.startDate === saved.startDate && 
+      item.dayName === saved.dayName
+    );
+    if (idx >= 0) {
+      local[idx] = saved;
+      localStorage.setItem('tqa_class_activities', JSON.stringify(local));
+    }
+
+    return saved;
+  } catch (error) {
+    console.warn('Failed to save class activity to Supabase:', error);
+    return activity;
+  }
+};
+
+export const deleteWeeklyActivities = async (className: string, startDate: string): Promise<void> => {
+  // Delete from local storage
+  try {
+    const local = JSON.parse(localStorage.getItem('tqa_class_activities') || '[]');
+    const filtered = local.filter((item: any) => 
+      !(item.className === className && item.startDate === startDate)
+    );
+    localStorage.setItem('tqa_class_activities', JSON.stringify(filtered));
+  } catch (e) {
+    console.error('Failed to delete weekly class activities locally:', e);
+  }
+
+  try {
+    const client = ensureSupabase();
+    const { error } = await client
+      .from('class_activities')
+      .delete()
+      .eq('class_name', className)
+      .eq('start_date', startDate);
+
+    if (error) throw error;
+  } catch (error) {
+    console.warn('Failed to delete weekly class activities from Supabase:', error);
   }
 };
 

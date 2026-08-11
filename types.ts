@@ -144,5 +144,11 @@ export interface UjianTartiliEntry {
   createdAt?: string;
 }
 
-
-
+export interface ClassActivity {
+  id?: string;
+  className: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  dayName: string;   // 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'
+  activityText: string;
+}

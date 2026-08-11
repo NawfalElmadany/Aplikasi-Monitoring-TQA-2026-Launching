@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, Video, MoreHorizontal, ChevronRight, ChevronDown, User as UserIcon, X, UserX, BookOpen, Bookmark, XCircle, Calendar, Award, Star, Book, Loader2, Bell } from 'lucide-react';
-import { Note, User, Student } from '../types';
+import { Note, User, Student, ClassActivity } from '../types';
 import Header from './Header';
 import FloatingHeaderCard from './FloatingHeaderCard';
 import { supabase } from '../lib/supabase';
@@ -18,6 +18,7 @@ interface DashboardModernProps {
     onSearchClick?: () => void;
     unreadNotesCount?: number;
     onResetData?: () => void;
+    classActivities?: ClassActivity[];
 }
 
 const DashboardModern: React.FC<DashboardModernProps> = ({ 
@@ -30,7 +31,8 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     onDismissNotification,
     onSearchClick,
     unreadNotesCount = 0,
-    onResetData
+    onResetData,
+    classActivities = []
 }) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -236,6 +238,28 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
     const targetClassId = activeClassId ? activeClassId : previousClassId;
     const isPastClass = !activeClassId && !!previousClassId;
 
+    const todayString = useMemo(() => {
+        const d = new Date();
+        const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+        const jakarta = new Date(utc + 3600000 * 7);
+        return jakarta.toISOString().slice(0, 10);
+    }, []);
+
+    const todaysActivities = useMemo(() => {
+        return (classActivities || []).filter((a: ClassActivity) => 
+            a.startDate <= todayString && 
+            a.endDate >= todayString && 
+            a.dayName === currentDayOfWeek &&
+            a.activityText && a.activityText.trim() !== ''
+        );
+    }, [classActivities, todayString, currentDayOfWeek]);
+
+    const activeClassActivity = useMemo(() => {
+        if (!activeClassId) return null;
+        const fullClassName = `Kelas ${activeClassId}`;
+        return todaysActivities.find((a: ClassActivity) => a.className === fullClassName) || null;
+    }, [activeClassId, todaysActivities]);
+ 
     // Dynamic teaching schedule banner text based on time and day
     const bannerText = useMemo(() => {
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -897,6 +921,69 @@ const DashboardModern: React.FC<DashboardModernProps> = ({
                                 ))}
                             </div>
                         </div>
+                    </div>
+
+                    {/* ===== CLASS ACTIVITIES CARD ===== */}
+                    <div className="bg-white dark:bg-[#121F18] border border-slate-100 dark:border-white/5 rounded-3xl p-6 shadow-sm w-full space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-xl">
+                                    <BookOpen size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Rencana Kegiatan Pembelajaran</h3>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500">Target/materi hafalan kelas hari ini ({currentDayOfWeek})</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => onNavigate('settings')}
+                                className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 hover:underline cursor-pointer"
+                            >
+                                Kelola Rencana
+                            </button>
+                        </div>
+
+                        {activeClassActivity ? (
+                            /* Highlighted Active Class Activity */
+                            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/5 dark:to-transparent border border-emerald-500/20 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
+                                        Sedang Mengajar
+                                    </span>
+                                    <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-400">
+                                        Kelas {activeClassId}
+                                    </span>
+                                </div>
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                    {activeClassActivity.activityText}
+                                </p>
+                            </div>
+                        ) : null}
+
+                        {/* List of other class activities for today */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {['Kelas 5B', 'Kelas 5C', 'Kelas 5D', 'Kelas 6C', 'Kelas 6D'].map(cls => {
+                                if (activeClassId && cls === `Kelas ${activeClassId}`) return null;
+                                
+                                const act = todaysActivities.find((a: ClassActivity) => a.className === cls);
+                                return (
+                                    <div key={cls} className="p-3.5 rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] space-y-1.5">
+                                        <h4 className="text-xs font-black text-slate-700 dark:text-slate-350">{cls}</h4>
+                                        <p className={`text-xs ${act ? 'text-slate-600 dark:text-slate-300 font-medium' : 'text-slate-300 dark:text-slate-650 italic'}`}>
+                                            {act ? act.activityText : 'Belum ada kegiatan dijadwalkan'}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {todaysActivities.length === 0 && !activeClassActivity && (
+                            <div className="py-4 text-center">
+                                <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+                                    Belum ada rencana kegiatan yang diinput untuk pekan ini.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                 {/* Grid Metrik Operasional Utama */}

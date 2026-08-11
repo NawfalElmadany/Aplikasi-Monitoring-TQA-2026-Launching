@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User as UserIcon, Calendar, BookOpen, Users, Save, Plus, Trash2, Edit2, Eye, EyeOff, Loader2, CheckCircle2, Shield, Download, Upload, AlertTriangle, AlertCircle, RotateCw, Bell } from 'lucide-react';
-import { User, AcademicYear, Target, Teacher } from '../types';
+import { User, AcademicYear, Target, Teacher, ClassActivity } from '../types';
 import TeacherModal from './TeacherModal';
 import Header from './Header';
 import { Student } from '../types';
@@ -64,6 +64,9 @@ interface SettingsPageProps {
     onDismissNotification?: (studentId: string) => void;
     onSearchClick?: () => void;
     onCheckForUpdates?: () => void;
+    classActivities?: ClassActivity[];
+    onSaveClassActivity?: (activity: ClassActivity) => void;
+    onDeleteWeeklyActivities?: (className: string, startDate: string) => void;
 }
 
 const VAPID_PUBLIC_KEY = 'BGE25JujCMx_cliddjOArNL459tKtWIKw3zQzvs4wFBFr-ZrvVEFwxvEBRQ4zrFT3BDCOyVCOiLAxboPo9z-SlI';
@@ -99,7 +102,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     notifications = [],
     onDismissNotification,
     onSearchClick,
-    onCheckForUpdates
+    onCheckForUpdates,
+    classActivities = [],
+    onSaveClassActivity,
+    onDeleteWeeklyActivities
 }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +137,114 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
+
+    // Weekly class activities form states
+    const [selectedClass, setSelectedClass] = useState('Kelas 5C');
+    
+    const getMonday = (d: Date) => {
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    };
+
+    const [selectedMonday, setSelectedMonday] = useState(() => {
+        const mon = getMonday(new Date());
+        return mon.toISOString().slice(0, 10);
+    });
+
+    const getFridayString = (mondayStr: string) => {
+        const monDate = new Date(mondayStr);
+        const friDate = new Date(monDate.setDate(monDate.getDate() + 4));
+        return friDate.toISOString().slice(0, 10);
+    };
+
+    const [weeklyActivities, setWeeklyActivities] = useState<Record<string, string>>({
+        'Senin': '',
+        'Selasa': '',
+        'Rabu': '',
+        'Kamis': '',
+        'Jumat': ''
+    });
+
+    const [isSavingActivities, setIsSavingActivities] = useState(false);
+    const [activitiesSaveSuccess, setActivitiesSaveSuccess] = useState(false);
+    const [isDeletingActivities, setIsDeletingActivities] = useState(false);
+
+    useEffect(() => {
+        const filtered = classActivities.filter(a => a.className === selectedClass && a.startDate === selectedMonday);
+        const nextActivities = {
+            'Senin': '',
+            'Selasa': '',
+            'Rabu': '',
+            'Kamis': '',
+            'Jumat': ''
+        };
+        filtered.forEach(a => {
+            if (a.dayName in nextActivities) {
+                nextActivities[a.dayName as keyof typeof nextActivities] = a.activityText;
+            }
+        });
+        setWeeklyActivities(nextActivities);
+    }, [selectedClass, selectedMonday, classActivities]);
+
+    const handleDateChange = (val: string) => {
+        if (!val) return;
+        const chosenDate = new Date(val);
+        const mon = getMonday(chosenDate);
+        setSelectedMonday(mon.toISOString().slice(0, 10));
+    };
+
+    const handleSaveActivities = async () => {
+        if (!onSaveClassActivity) return;
+        setIsSavingActivities(true);
+        setActivitiesSaveSuccess(false);
+
+        const endDate = getFridayString(selectedMonday);
+        
+        try {
+            const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+            for (const day of days) {
+                const text = weeklyActivities[day] || '';
+                await onSaveClassActivity({
+                    className: selectedClass,
+                    startDate: selectedMonday,
+                    endDate: endDate,
+                    dayName: day,
+                    activityText: text
+                });
+            }
+            setActivitiesSaveSuccess(true);
+            setTimeout(() => setActivitiesSaveSuccess(false), 3000);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSavingActivities(false);
+        }
+    };
+
+    const handleDeleteActivities = async () => {
+        if (!onDeleteWeeklyActivities) return;
+        if (!window.confirm(`Apakah Anda yakin ingin menghapus seluruh rencana kegiatan ${selectedClass} untuk pekan ${selectedMonday} s.d. ${getFridayString(selectedMonday)}?`)) {
+            return;
+        }
+
+        setIsDeletingActivities(true);
+        try {
+            await onDeleteWeeklyActivities(selectedClass, selectedMonday);
+            setWeeklyActivities({
+                'Senin': '',
+                'Selasa': '',
+                'Rabu': '',
+                'Kamis': '',
+                'Jumat': ''
+            });
+            alert('Rencana kegiatan pekanan berhasil dihapus.');
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsDeletingActivities(false);
+        }
+    };
 
     const [notificationPermission, setNotificationPermission] = useState<string>(() => {
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -423,6 +537,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     const tabs = [
         { id: 'profile', label: 'Profil Pengguna', icon: UserIcon },
         { id: 'notifications', label: 'Notifikasi & Push', icon: Bell },
+        { id: 'activities', label: 'Kegiatan Kelas', icon: BookOpen },
         { id: 'academic', label: 'Tahun Ajaran', icon: Calendar },
         { id: 'targets', label: 'Target Hafalan', icon: BookOpen },
         { id: 'teachers', label: 'Manajemen Guru', icon: Users },
@@ -676,6 +791,111 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                                         )}
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Weekly Class Activities Section */}
+                    {activeTab === 'activities' && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6 animate-in fade-in duration-300">
+                            <div className="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800">Manajemen Rencana Kegiatan Kelas</h3>
+                                    <p className="text-slate-500 text-xs mt-1">Buat target/materi hafalan selama satu pekan per kelas</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div>
+                                        <select
+                                            value={selectedClass}
+                                            onChange={(e) => setSelectedClass(e.target.value)}
+                                            className="px-3 py-2 text-xs font-bold text-slate-700 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-emerald-200"
+                                        >
+                                            <option value="Kelas 5B">Kelas 5B</option>
+                                            <option value="Kelas 5C">Kelas 5C</option>
+                                            <option value="Kelas 5D">Kelas 5D</option>
+                                            <option value="Kelas 6C">Kelas 6C</option>
+                                            <option value="Kelas 6D">Kelas 6D</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                                        <Calendar size={14} className="text-slate-500" />
+                                        <input
+                                            type="date"
+                                            value={selectedMonday}
+                                            onChange={(e) => handleDateChange(e.target.value)}
+                                            className="bg-transparent text-xs font-bold text-slate-700 border-none outline-none cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Alert/Rentang tanggal info */}
+                            <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex items-center justify-between text-emerald-800 text-xs font-semibold">
+                                <div className="flex items-center gap-2">
+                                    <BookOpen size={16} className="text-emerald-600" />
+                                    <span>Rentang Pekan: {new Date(selectedMonday).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})} s.d. {new Date(getFridayString(selectedMonday)).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</span>
+                                </div>
+                                <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Aktif</span>
+                            </div>
+
+                            {/* Days Form */}
+                            <div className="space-y-4">
+                                {(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'] as const).map((day) => (
+                                    <div key={day} className="flex flex-col sm:flex-row sm:items-start gap-3 p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                                        <div className="w-full sm:w-32 flex items-center gap-2 pt-2.5">
+                                            <div className="w-1.5 h-6 bg-emerald-600 rounded-full" />
+                                            <span className="font-extrabold text-slate-800 text-sm">{day}</span>
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <textarea
+                                               value={weeklyActivities[day]}
+                                               onChange={(e) => setWeeklyActivities({...weeklyActivities, [day]: e.target.value})}
+                                               placeholder={`Tulis kegiatan / hafalan kelas ${selectedClass} untuk hari ${day}...`}
+                                               rows={2}
+                                               className="w-full p-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none resize-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Action Buttons Row */}
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                <button
+                                    onClick={handleDeleteActivities}
+                                    disabled={isDeletingActivities}
+                                    className="flex items-center gap-2 px-4 py-2.5 text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    <Trash2 size={16} />
+                                    <span>{isDeletingActivities ? 'Menghapus...' : 'Hapus Rencana Pekan Ini'}</span>
+                                </button>
+
+                                <button
+                                    onClick={handleSaveActivities}
+                                    disabled={isSavingActivities}
+                                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer ${
+                                        activitiesSaveSuccess
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    }`}
+                                >
+                                    {isSavingActivities ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            <span>Menyimpan Rencana...</span>
+                                        </>
+                                    ) : activitiesSaveSuccess ? (
+                                        <>
+                                            <CheckCircle2 size={16} />
+                                            <span>Berhasil Disimpan</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={16} />
+                                            <span>Simpan Rencana Kegiatan</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
                     )}

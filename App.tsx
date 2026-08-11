@@ -37,10 +37,10 @@ const TartiliPage = lazy(() => import('./components/TartiliPage'));
 const GharibPage = lazy(() => import('./components/GharibPage'));
 const UjianTartiliPage = lazy(() => import('./components/UjianTartiliPage'));
 
-import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry, UjianTartiliEntry } from './types';
+import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, GharibEntry, TartiliEntry, UjianTartiliEntry, ClassActivity } from './types';
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry, loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry } from './services/appData';
+import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry, loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry, loadClassActivities, saveClassActivity, deleteWeeklyActivities } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
 import { useToast } from './context/ToastContext';
 
@@ -666,10 +666,49 @@ function App() {
        }
     };
 
-   // Lifted State for Settings
-   const [academicYear, setAcademicYear] = useState<AcademicYear>(DEFAULT_ACADEMIC_YEAR);
-   const [targets, setTargets] = useState<Target[]>(DEFAULT_TARGETS);
-   const [teachers, setTeachers] = useState<Teacher[]>(DEFAULT_TEACHERS);
+    // Lifted State for Settings
+    const [academicYear, setAcademicYear] = useState<AcademicYear>(DEFAULT_ACADEMIC_YEAR);
+    const [targets, setTargets] = useState<Target[]>(DEFAULT_TARGETS);
+    const [teachers, setTeachers] = useState<Teacher[]>(DEFAULT_TEACHERS);
+    const [classActivities, setClassActivities] = useState<ClassActivity[]>(() => {
+       const local = localStorage.getItem('tqa_class_activities');
+       return local ? JSON.parse(local) : [];
+    });
+
+    const handleSaveClassActivityState = async (activity: ClassActivity) => {
+       setClassActivities(prev => {
+          const idx = prev.findIndex(a => 
+             a.className === activity.className && 
+             a.startDate === activity.startDate && 
+             a.dayName === activity.dayName
+          );
+          const next = [...prev];
+          if (idx >= 0) {
+             next[idx] = activity;
+          } else {
+             next.push(activity);
+          }
+          return next;
+       });
+
+       try {
+          const saved = await saveClassActivity(activity);
+          setClassActivities(prev => prev.map(a => 
+             (a.className === saved.className && a.startDate === saved.startDate && a.dayName === saved.dayName) ? saved : a
+          ));
+       } catch (error) {
+          console.error('Failed to save class activity:', error);
+       }
+    };
+
+    const handleDeleteWeeklyActivitiesState = async (className: string, startDate: string) => {
+       setClassActivities(prev => prev.filter(a => !(a.className === className && a.startDate === startDate)));
+       try {
+          await deleteWeeklyActivities(className, startDate);
+       } catch (error) {
+          console.error('Failed to delete weekly activities:', error);
+       }
+    };
 
    useEffect(() => {
       const savedUser = localStorage.getItem('tqa_user');
@@ -766,14 +805,15 @@ function App() {
          }
 
          try {
-            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
+            const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries, remoteActivities] = await Promise.all([
                loadMurojaahEntries(),
                loadStudents(),
                loadAppSettings(),
                loadNotes(),
                loadGharibEntries().catch(() => []),
                loadTartiliEntries().catch(() => []),
-               loadUjianTartiliEntries().catch(() => [])
+               loadUjianTartiliEntries().catch(() => []),
+               loadClassActivities().catch(() => [])
             ]);
 
 
@@ -837,6 +877,7 @@ function App() {
             setGharibEntries(nextGharibEntries);
             setTartiliEntries(nextTartiliEntries);
             setUjianTartiliEntries(nextUjianEntries);
+            setClassActivities(remoteActivities || []);
          } catch (error: any) {
             console.error('Failed to bootstrap app data:', error);
             if (isMounted) {
@@ -969,14 +1010,15 @@ function App() {
 
        setIsRefreshing(true);
        try {
-          const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
+          const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries, remoteActivities] = await Promise.all([
              loadMurojaahEntries(),
              loadStudents(),
              loadAppSettings(),
              loadNotes(),
              loadGharibEntries().catch(() => []),
              loadTartiliEntries().catch(() => []),
-             loadUjianTartiliEntries().catch(() => [])
+             loadUjianTartiliEntries().catch(() => []),
+             loadClassActivities().catch(() => [])
           ]);
 
           setStudents(remoteStudents.map(s => (!s.avatar || s.avatar.includes('api.dicebear.com') ? { ...s, avatar: getAvatarUrl(s.name) } : s)));
@@ -990,6 +1032,7 @@ function App() {
           setGharibEntries(remoteGharibEntries);
           setTartiliEntries(remoteTartiliEntries);
           setUjianTartiliEntries(remoteUjianEntries);
+          setClassActivities(remoteActivities || []);
 
           window.dispatchEvent(new Event('tqa_new_personal_message'));
           triggerGlobalToast('Data berhasil disinkronkan dengan database.');
@@ -1007,14 +1050,15 @@ function App() {
 
        const interval = setInterval(async () => {
           try {
-             const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries] = await Promise.all([
+             const [remoteMurojaahEntries, remoteStudents, remoteSettings, remoteNotes, remoteGharibEntries, remoteTartiliEntries, remoteUjianEntries, remoteActivities] = await Promise.all([
                 loadMurojaahEntries(),
                 loadStudents(),
                 loadAppSettings(),
                 loadNotes(),
                 loadGharibEntries().catch(() => []),
                 loadTartiliEntries().catch(() => []),
-                loadUjianTartiliEntries().catch(() => [])
+                loadUjianTartiliEntries().catch(() => []),
+                loadClassActivities().catch(() => [])
              ]);
 
              setStudents(prevStudents => {
@@ -1031,6 +1075,7 @@ function App() {
              setGharibEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteGharibEntries) ? remoteGharibEntries : prev);
              setTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteTartiliEntries) ? remoteTartiliEntries : prev);
              setUjianTartiliEntries(prev => JSON.stringify(prev) !== JSON.stringify(remoteUjianEntries) ? remoteUjianEntries : prev);
+             setClassActivities(prev => JSON.stringify(prev) !== JSON.stringify(remoteActivities) ? (remoteActivities || []) : prev);
 
              window.dispatchEvent(new Event('tqa_new_personal_message'));
           } catch (error) {
@@ -1343,6 +1388,7 @@ function App() {
                   onSearchClick={showQuickActions ? handleSearchClick : undefined}
                   unreadNotesCount={unreadNotesCount}
                   onResetData={handleResetData}
+                  classActivities={classActivities}
                />
             );
          case 'input_setoran':
@@ -2084,6 +2130,9 @@ function App() {
                   onDismissNotification={handleDismissNotification}
                   onSearchClick={showQuickActions ? handleSearchClick : undefined}
                   onCheckForUpdates={() => checkForUpdates(true)}
+                  classActivities={classActivities}
+                  onSaveClassActivity={handleSaveClassActivityState}
+                  onDeleteWeeklyActivities={handleDeleteWeeklyActivitiesState}
                />
              );
          default:
