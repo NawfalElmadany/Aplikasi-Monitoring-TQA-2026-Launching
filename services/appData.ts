@@ -1335,7 +1335,7 @@ export const loadClassActivities = async (): Promise<ClassActivity[]> => {
 
     if (error) throw error;
 
-    const activities: ClassActivity[] = (data || []).map((row: any) => ({
+    const remoteActivities: ClassActivity[] = (data || []).map((row: any) => ({
       id: row.id,
       className: row.class_name,
       startDate: row.start_date,
@@ -1344,8 +1344,25 @@ export const loadClassActivities = async (): Promise<ClassActivity[]> => {
       activityText: row.activity_text
     }));
 
-    localStorage.setItem('tqa_class_activities', JSON.stringify(activities));
-    return activities;
+    // Retrieve local storage data to check if we have offline data to sync
+    let localActivities: ClassActivity[] = [];
+    try {
+      localActivities = JSON.parse(localStorage.getItem('tqa_class_activities') || '[]');
+    } catch (e) {
+      localActivities = [];
+    }
+
+    // If Supabase is empty, but local storage has data: sync local data to Supabase!
+    if (remoteActivities.length === 0 && localActivities.length > 0) {
+      console.log('Supabase class_activities is empty, syncing local data to Supabase...');
+      for (const act of localActivities) {
+        await saveClassActivity(act);
+      }
+      return localActivities;
+    }
+
+    localStorage.setItem('tqa_class_activities', JSON.stringify(remoteActivities));
+    return remoteActivities;
   } catch (error) {
     console.warn('Failed to load class activities from Supabase, returning cache:', error);
     try {
