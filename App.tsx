@@ -42,6 +42,7 @@ import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJ
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry, loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry, loadClassActivities, saveClassActivity, deleteWeeklyActivities } from './services/appData';
 import { generateMonthlyReportPDF } from './services/pdfExport';
+import { generateMonthlyReportDocx } from './services/docxExport';
 import { useToast } from './context/ToastContext';
 
 function App() {
@@ -1867,9 +1868,17 @@ function App() {
                });
             };
 
-
-
-
+            const downloadDocx = () => {
+               generateMonthlyReportDocx({
+                  reportFilterMode,
+                  reportMonth,
+                  reportStartDate,
+                  reportEndDate,
+                  reportClass,
+                  getDisplayMonthLabel,
+                  reportData
+               });
+            };
 
             return (
                <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full animate-in fade-in duration-500">
@@ -1887,13 +1896,22 @@ function App() {
                         onRefresh={handleRefreshData}
                         isRefreshing={isRefreshing}
                         actionButton={
-                           <button
-                              onClick={downloadPDF}
-                              className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
-                           >
-                              <Download size={18} />
-                              <span>Unduh PDF</span>
-                           </button>
+                           <div className="flex items-center gap-2">
+                              <button
+                                 onClick={downloadPDF}
+                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                              >
+                                 <Download size={18} />
+                                 <span>Unduh PDF</span>
+                              </button>
+                              <button
+                                 onClick={downloadDocx}
+                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                              >
+                                 <FileText size={18} />
+                                 <span>Unduh Word (.docx)</span>
+                              </button>
+                           </div>
                         }
                      />
 
