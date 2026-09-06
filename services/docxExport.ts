@@ -63,8 +63,8 @@ export const generateMonthlyReportDocx = async ({
       logoImageRun = new ImageRun({
         data: arrayBuffer,
         transformation: {
-          width: 55,
-          height: 55,
+          width: 85,
+          height: 85,
         },
         type: 'png',
       });
@@ -109,7 +109,7 @@ export const generateMonthlyReportDocx = async ({
         children: [
           // Logo Cell
           new TableCell({
-            width: { size: logoImageRun ? 10 : 0, type: WidthType.PERCENTAGE },
+            width: { size: logoImageRun ? 13 : 0, type: WidthType.PERCENTAGE },
             borders: borderless,
             margins: { top: 0, bottom: 0, left: 0, right: 100 },
             children: logoImageRun
@@ -118,7 +118,7 @@ export const generateMonthlyReportDocx = async ({
           }),
           // Agency Info Cell
           new TableCell({
-            width: { size: logoImageRun ? 55 : 65, type: WidthType.PERCENTAGE },
+            width: { size: logoImageRun ? 52 : 65, type: WidthType.PERCENTAGE },
             borders: borderless,
             margins: { top: 0, bottom: 0, left: 0, right: 100 },
             children: [
@@ -128,9 +128,9 @@ export const generateMonthlyReportDocx = async ({
                   new TextRun({
                     text: 'MI AL IRSYAD KOTA MADIUN',
                     bold: true,
-                    size: 26, // 13pt
+                    size: 28, // 14pt
                     color: '059669', // Emerald-600
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -140,9 +140,9 @@ export const generateMonthlyReportDocx = async ({
                   new TextRun({
                     text: "Program Tahfidz Al-Qur'an (TQA)",
                     bold: true,
-                    size: 20, // 10pt
+                    size: 22, // 11pt
                     color: '1E293B',
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -153,7 +153,7 @@ export const generateMonthlyReportDocx = async ({
                     text: 'Jl. Diponegoro No. 112B Kota Madiun, Jawa Timur',
                     size: 18, // 9pt
                     color: '64748B',
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -171,9 +171,9 @@ export const generateMonthlyReportDocx = async ({
                   new TextRun({
                     text: 'LAPORAN CAPAIAN TQA',
                     bold: true,
-                    size: 24, // 12pt
+                    size: 26, // 13pt
                     color: '0F172A',
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -184,7 +184,7 @@ export const generateMonthlyReportDocx = async ({
                     text: `Periode: ${periodeLabel}`,
                     size: 18,
                     color: '475569',
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -196,7 +196,7 @@ export const generateMonthlyReportDocx = async ({
                     bold: true,
                     size: 18,
                     color: '475569',
-                    font: 'Calibri'
+                    font: 'Times New Roman'
                   })
                 ]
               }),
@@ -249,7 +249,7 @@ export const generateMonthlyReportDocx = async ({
               bold: true,
               color: 'FFFFFF',
               size: 18, // 9pt
-              font: 'Calibri'
+              font: 'Times New Roman'
             })
           ]
         })
@@ -288,7 +288,7 @@ export const generateMonthlyReportDocx = async ({
                 bold: cell.bold,
                 color: '1E293B', // Slate-800
                 size: 18, // 9pt
-                font: 'Calibri'
+                font: 'Times New Roman'
               })
             ]
           })
@@ -311,12 +311,21 @@ export const generateMonthlyReportDocx = async ({
         italics: true,
         size: 16,
         color: '94A3B8',
-        font: 'Calibri'
+        font: 'Times New Roman'
       })
     ]
   });
 
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Times New Roman',
+          },
+        },
+      },
+    },
     sections: [
       {
         properties: {
