@@ -10,7 +10,8 @@ import {
   AlignmentType,
   BorderStyle,
   PageOrientation,
-  ImageRun
+  ImageRun,
+  VerticalAlign
 } from 'docx';
 
 export interface WordReportOptions {
@@ -54,6 +55,7 @@ export const generateMonthlyReportDocx = async ({
     : `${formatDateId(reportStartDate)} s/d ${formatDateId(reportEndDate)}`;
 
   // Fetch logo image data as ArrayBuffer if logoUrl is provided
+  // Logo aspect ratio is ~ 1.5147:1 (1024x676), so 80px width x 53px height matches perfectly without vertical distortion
   let logoImageRun: ImageRun | null = null;
   if (logoUrl) {
     try {
@@ -63,8 +65,8 @@ export const generateMonthlyReportDocx = async ({
       logoImageRun = new ImageRun({
         data: arrayBuffer,
         transformation: {
-          width: 85,
-          height: 85,
+          width: 82,
+          height: 54,
         },
         type: 'png',
       });
@@ -100,7 +102,7 @@ export const generateMonthlyReportDocx = async ({
     right: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' },
   };
 
-  // Top Header Table (Logo + School info + Report info)
+  // Top Header Table (Logo + School info + Report info) matching Image 2 perfectly
   const topHeaderTable = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: borderless,
@@ -109,51 +111,56 @@ export const generateMonthlyReportDocx = async ({
         children: [
           // Logo Cell
           new TableCell({
-            width: { size: logoImageRun ? 13 : 0, type: WidthType.PERCENTAGE },
+            width: { size: logoImageRun ? 12 : 0, type: WidthType.PERCENTAGE },
             borders: borderless,
+            verticalAlign: VerticalAlign.CENTER,
             margins: { top: 0, bottom: 0, left: 0, right: 100 },
             children: logoImageRun
-              ? [new Paragraph({ children: [logoImageRun], alignment: AlignmentType.LEFT })]
+              ? [new Paragraph({ children: [logoImageRun], alignment: AlignmentType.LEFT, spacing: { before: 0, after: 0 } })]
               : [],
           }),
           // Agency Info Cell
           new TableCell({
-            width: { size: logoImageRun ? 52 : 65, type: WidthType.PERCENTAGE },
+            width: { size: logoImageRun ? 53 : 65, type: WidthType.PERCENTAGE },
             borders: borderless,
+            verticalAlign: VerticalAlign.CENTER,
             margins: { top: 0, bottom: 0, left: 0, right: 100 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.LEFT,
+                spacing: { before: 0, after: 20, line: 240 },
                 children: [
                   new TextRun({
                     text: 'MI AL IRSYAD KOTA MADIUN',
                     bold: true,
-                    size: 28, // 14pt
+                    size: 26, // 13pt
                     color: '059669', // Emerald-600
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
               new Paragraph({
                 alignment: AlignmentType.LEFT,
+                spacing: { before: 0, after: 20, line: 240 },
                 children: [
                   new TextRun({
                     text: "Program Tahfidz Al-Qur'an (TQA)",
                     bold: true,
-                    size: 22, // 11pt
+                    size: 20, // 10pt
                     color: '1E293B',
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
               new Paragraph({
                 alignment: AlignmentType.LEFT,
+                spacing: { before: 0, after: 0, line: 240 },
                 children: [
                   new TextRun({
                     text: 'Jl. Diponegoro No. 112B Kota Madiun, Jawa Timur',
-                    size: 18, // 9pt
+                    size: 16, // 8pt
                     color: '64748B',
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
@@ -163,40 +170,43 @@ export const generateMonthlyReportDocx = async ({
           new TableCell({
             width: { size: 35, type: WidthType.PERCENTAGE },
             borders: borderless,
+            verticalAlign: VerticalAlign.CENTER,
             margins: { top: 0, bottom: 0, left: 0, right: 0 },
             children: [
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
+                spacing: { before: 0, after: 20, line: 240 },
                 children: [
                   new TextRun({
-                    text: 'LAPORAN CAPAIAN TQA',
+                    text: 'Laporan Capaian TQA',
                     bold: true,
-                    size: 26, // 13pt
+                    size: 24, // 12pt
                     color: '0F172A',
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
+                spacing: { before: 0, after: 20, line: 240 },
                 children: [
                   new TextRun({
                     text: `Periode: ${periodeLabel}`,
-                    size: 18,
+                    size: 16, // 8pt
                     color: '475569',
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
+                spacing: { before: 0, after: 0, line: 240 },
                 children: [
                   new TextRun({
                     text: `Kelas: ${reportClass}`,
-                    bold: true,
-                    size: 18,
+                    size: 16, // 8pt
                     color: '475569',
-                    font: 'Times New Roman'
+                    font: 'Calibri'
                   })
                 ]
               }),
@@ -207,30 +217,30 @@ export const generateMonthlyReportDocx = async ({
     ],
   });
 
-  // Green separator line below header
+  // Solid green separator line below header matching Image 2
   const headerDivider = new Paragraph({
-    spacing: { before: 100, after: 250 },
+    spacing: { before: 100, after: 200 },
     border: {
       bottom: {
         color: '059669',
         space: 1,
         style: BorderStyle.SINGLE,
-        size: 12, // 1.5pt solid emerald green line
+        size: 14, // 1.75pt solid emerald green line
       },
     },
   });
 
-  // Main Data Table Headers
+  // Main Data Table Headers matching Image 2 layout
   const headers = [
-    { text: 'No', width: 5, align: AlignmentType.CENTER },
-    { text: 'Nama Siswa', width: 23, align: AlignmentType.LEFT },
-    { text: 'Hafalan Awal', width: 10, align: AlignmentType.CENTER },
-    { text: 'Hafalan Akhir', width: 10, align: AlignmentType.CENTER },
-    { text: 'Drill Munaqosah', width: 13, align: AlignmentType.CENTER },
-    { text: 'Tartili Awal', width: 9, align: AlignmentType.CENTER },
-    { text: 'Tartili Akhir', width: 9, align: AlignmentType.CENTER },
-    { text: 'Drill Tartili', width: 10, align: AlignmentType.CENTER },
-    { text: 'Gharib', width: 11, align: AlignmentType.CENTER }
+    { text: 'No', width: 4, align: AlignmentType.CENTER },
+    { text: 'Nama Siswa', width: 24, align: AlignmentType.LEFT },
+    { text: 'Hafalan Awal', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Hafalan Akhir', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Drill Munaqosah', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Tartili Awal', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Tartili Akhir', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Drill Tartili', width: 10.2, align: AlignmentType.CENTER },
+    { text: 'Gharib', width: 10.4, align: AlignmentType.CENTER }
   ];
 
   const headerRow = new TableRow({
@@ -239,17 +249,19 @@ export const generateMonthlyReportDocx = async ({
       width: { size: h.width, type: WidthType.PERCENTAGE },
       shading: { fill: '059669' }, // Emerald-600
       borders: headerBorders,
-      margins: { top: 120, bottom: 120, left: 100, right: 100 },
+      verticalAlign: VerticalAlign.CENTER,
+      margins: { top: 100, bottom: 100, left: 80, right: 80 },
       children: [
         new Paragraph({
           alignment: h.align,
+          spacing: { before: 0, after: 0, line: 220 },
           children: [
             new TextRun({
               text: h.text,
               bold: true,
               color: 'FFFFFF',
-              size: 18, // 9pt
-              font: 'Times New Roman'
+              size: 17, // ~8.5pt
+              font: 'Calibri'
             })
           ]
         })
@@ -278,17 +290,19 @@ export const generateMonthlyReportDocx = async ({
         width: { size: headers[cIdx].width, type: WidthType.PERCENTAGE },
         shading: { fill: bgFill },
         borders: cellBorders,
-        margins: { top: 100, bottom: 100, left: 100, right: 100 },
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 80, bottom: 80, left: 80, right: 80 },
         children: [
           new Paragraph({
             alignment: cell.align,
+            spacing: { before: 0, after: 0, line: 220 },
             children: [
               new TextRun({
                 text: cell.text,
                 bold: cell.bold,
                 color: '1E293B', // Slate-800
-                size: 18, // 9pt
-                font: 'Times New Roman'
+                size: 16, // 8pt
+                font: 'Calibri'
               })
             ]
           })
@@ -303,15 +317,15 @@ export const generateMonthlyReportDocx = async ({
   });
 
   const footerParagraph = new Paragraph({
-    spacing: { before: 300 },
+    spacing: { before: 200, after: 0 },
     alignment: AlignmentType.RIGHT,
     children: [
       new TextRun({
         text: `Dicetak pada: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
         italics: true,
-        size: 16,
+        size: 15,
         color: '94A3B8',
-        font: 'Times New Roman'
+        font: 'Calibri'
       })
     ]
   });
@@ -321,7 +335,7 @@ export const generateMonthlyReportDocx = async ({
       default: {
         document: {
           run: {
-            font: 'Times New Roman',
+            font: 'Calibri',
           },
         },
       },
