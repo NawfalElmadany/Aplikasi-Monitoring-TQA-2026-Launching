@@ -22,18 +22,39 @@ export interface PDFReportOptions {
   }>;
 }
 
-export const generateMonthlyReportPDF = ({
-  logoUrl,
-  reportFilterMode,
-  reportMonth,
-  reportStartDate,
-  reportEndDate,
-  reportClass,
-  getDisplayMonthLabel,
-  reportData
-}: PDFReportOptions) => {
-  const doc = new jsPDF('landscape');
+export interface AllClassesPDFReportOptions {
+  logoUrl: string;
+  reportFilterMode: 'month' | 'range';
+  reportMonth: string;
+  reportStartDate: string;
+  reportEndDate: string;
+  getDisplayMonthLabel: (month: string) => string;
+  allClassesData: Array<{
+    className: string;
+    reportData: Array<{
+      name: string;
+      hafalanStart: string;
+      hafalanEnd: string;
+      drillMunaqosah: string;
+      tartiliStart: string;
+      tartiliEnd: string;
+      drillTartili: string;
+      gharib: string;
+    }>;
+  }>;
+}
 
+const renderSingleClassPage = (
+  doc: jsPDF,
+  logoUrl: string,
+  reportFilterMode: 'month' | 'range',
+  reportMonth: string,
+  reportStartDate: string,
+  reportEndDate: string,
+  reportClass: string,
+  getDisplayMonthLabel: (month: string) => string,
+  reportData: PDFReportOptions['reportData']
+) => {
   // Header with Logo
   const logoHeight = 22;
   const logoWidth = 22 * (1024 / 676); // Aspect ratio: 1.5147
@@ -127,11 +148,69 @@ export const generateMonthlyReportPDF = ({
       fillColor: [240, 253, 244] // Emerald-50
     }
   });
+};
 
+export const generateMonthlyReportPDF = ({
+  logoUrl,
+  reportFilterMode,
+  reportMonth,
+  reportStartDate,
+  reportEndDate,
+  reportClass,
+  getDisplayMonthLabel,
+  reportData
+}: PDFReportOptions) => {
+  const doc = new jsPDF('landscape');
+  renderSingleClassPage(
+    doc,
+    logoUrl,
+    reportFilterMode,
+    reportMonth,
+    reportStartDate,
+    reportEndDate,
+    reportClass,
+    getDisplayMonthLabel,
+    reportData
+  );
 
   const fileName = reportFilterMode === 'month'
     ? `Laporan_TQA_${reportClass}_${reportMonth}.pdf`
     : `Laporan_TQA_${reportClass}_Periode.pdf`;
+
+  doc.save(fileName);
+};
+
+export const generateAllClassesMonthlyReportPDF = ({
+  logoUrl,
+  reportFilterMode,
+  reportMonth,
+  reportStartDate,
+  reportEndDate,
+  getDisplayMonthLabel,
+  allClassesData
+}: AllClassesPDFReportOptions) => {
+  const doc = new jsPDF('landscape');
+
+  allClassesData.forEach((classSection, classIdx) => {
+    if (classIdx > 0) {
+      doc.addPage();
+    }
+    renderSingleClassPage(
+      doc,
+      logoUrl,
+      reportFilterMode,
+      reportMonth,
+      reportStartDate,
+      reportEndDate,
+      classSection.className,
+      getDisplayMonthLabel,
+      classSection.reportData
+    );
+  });
+
+  const fileName = reportFilterMode === 'month'
+    ? `Laporan_TQA_Semua_Kelas_${reportMonth}.pdf`
+    : `Laporan_TQA_Semua_Kelas_Periode.pdf`;
 
   doc.save(fileName);
 };

@@ -41,8 +41,8 @@ import { AcademicYear, MurojaahEntry, Note, Student, Target, Teacher, User, Ghar
 import { DEFAULT_ACADEMIC_YEAR, DEFAULT_TARGETS, DEFAULT_TEACHERS, INITIAL_MUROJAAH_ENTRIES, INITIAL_NOTES, INITIAL_STUDENTS } from './constants';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { createMurojaahEntry, deleteMurojaahEntry, deleteNote, loadAppSettings, loadMurojaahEntries, loadNotes, loadStudents, saveAppSettings, saveNote, saveStudent, seedMurojaahEntries, seedNotes, seedStudents, loadGharibEntries, createGharibEntry, updateGharibEntry, deleteGharibEntry, createSetoranLog, loadStudentSetoranLogs, loadClassSetoranLogs, markStudentNotesAsRead, getAssignedTeacher, loadTartiliEntries, createTartiliEntry, updateTartiliEntry, deleteTartiliEntry, loadUjianTartiliEntries, createUjianTartiliEntry, updateUjianTartiliEntry, deleteUjianTartiliEntry, loadClassActivities, saveClassActivity, deleteWeeklyActivities } from './services/appData';
-import { generateMonthlyReportPDF } from './services/pdfExport';
-import { generateMonthlyReportDocx } from './services/docxExport';
+import { generateMonthlyReportPDF, generateAllClassesMonthlyReportPDF } from './services/pdfExport';
+import { generateMonthlyReportDocx, generateAllClassesMonthlyReportDocx } from './services/docxExport';
 import { useToast } from './context/ToastContext';
 
 function App() {
@@ -1661,262 +1661,303 @@ function App() {
                    unreadNotesCount={unreadNotesCount}
                 />
              );
-         case 'laporan':
-            // Generate Report Data Logic with Start/End Progress
-            const studentsInReportClass = students.filter(s => s.class === reportClass);
+          case 'laporan':
+             // Detailed Surah Lists by Juz for mapping/resolving
+             const surahs30 = [
+                "An-Naba", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin",
+                "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr",
+                "Al-Balad", "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin",
+                "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat", "Al-Qari'ah",
+                "At-Takathur", "Al-Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un",
+                "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Lahab", "Al-Ikhlas", "Al-Falaq", "An-Nas"
+             ];
+             const surahs29 = [
+                "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn",
+                "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat"
+             ];
+             const surahs28 = [
+                "Al-Mujadila", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah",
+                "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim"
+             ];
 
-            // Detailed Surah Lists by Juz for mapping/resolving
-            const surahs30 = [
-               "An-Naba", "An-Nazi'at", "'Abasa", "At-Takwir", "Al-Infitar", "Al-Mutaffifin",
-               "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr",
-               "Al-Balad", "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin",
-               "Al-Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-Adiyat", "Al-Qari'ah",
-               "At-Takathur", "Al-Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un",
-               "Al-Kawthar", "Al-Kafirun", "An-Nasr", "Al-Lahab", "Al-Ikhlas", "Al-Falaq", "An-Nas"
-            ];
-            const surahs29 = [
-               "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij", "Nuh", "Al-Jinn",
-               "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat"
-            ];
-            const surahs28 = [
-               "Al-Mujadila", "Al-Hashr", "Al-Mumtahanah", "As-Saff", "Al-Jumu'ah",
-               "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim"
-            ];
+             const setoranLogs = setoranLogsState;
 
-            // Load real setoran logs
-            const setoranLogs = setoranLogsState;
+             const computeReportDataForClass = (targetClass: string) => {
+                const studentsInTargetClass = students.filter(s => s.class === targetClass);
 
-            const reportData = studentsInReportClass.map(student => {
-               // Use deterministic seed based on month and student for mock consistency
-               const seed = student.name.length + parseInt(reportMonth.replace('-', ''));
+                return studentsInTargetClass.map(student => {
+                   const seed = student.name.length + parseInt(reportMonth.replace('-', ''));
 
-               // Filter logs for this student in the selected month/range
-               const studentLogs = setoranLogs.filter((log: any) => {
-                  if (log.studentId !== student.id || !log.date) return false;
-                  if (reportFilterMode === 'month') {
-                     return log.date.startsWith(reportMonth);
-                  } else {
-                     const logDateStr = log.date.slice(0, 10); // YYYY-MM-DD
-                     return logDateStr >= reportStartDate && logDateStr <= reportEndDate;
-                  }
-               }).sort((a: any, b: any) => a.date.localeCompare(b.date));
-
-               let hafalanStartDisplay = "";
-               let hafalanEndDisplay = "";
-               let tartiliStart = "";
-               let tartiliEnd = "";
-
-               // Helper to clean Drill text from displays
-               const cleanDrillText = (text: string) => {
-                  if (!text) return "";
-                  return text.replace(/Drill Munaqosah\s+/gi, "").replace(/Drill Tartili\s+/gi, "");
-               };
-
-                // 1. Hafalan Logs Calculation
-                const hafalanLogs = studentLogs.filter((log: any) => log.type === 'Hafalan');
-                const hafalanLanjutLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
-
-                if (hafalanLanjutLogs.length > 0) {
-                   hafalanStartDisplay = cleanDrillText(hafalanLanjutLogs[0].currentSurah);
-                   hafalanEndDisplay = cleanDrillText(hafalanLanjutLogs[hafalanLanjutLogs.length - 1].currentSurah);
-                } else {
-                   hafalanStartDisplay = "-";
-                   hafalanEndDisplay = "-";
-                }
-
-                // Helper to resolve raw Juz text to a specific realistic Surah name in that Juz
-                const resolveSurahName = (rawName: string, studentSeed: number) => {
-                   const cleanName = rawName.trim();
-                   if (cleanName.startsWith("Juz")) {
-                      const match = cleanName.match(/Juz\s+(\d+)/i);
-                      if (match) {
-                         const juzNum = parseInt(match[1]);
-                         if (juzNum === 30) return surahs30[studentSeed % surahs30.length];
-                         if (juzNum === 29) return surahs29[studentSeed % surahs29.length];
-                         if (juzNum === 28) return surahs28[studentSeed % surahs28.length];
+                   const studentLogs = setoranLogs.filter((log: any) => {
+                      if (log.studentId !== student.id || !log.date) return false;
+                      if (reportFilterMode === 'month') {
+                         return log.date.startsWith(reportMonth);
+                      } else {
+                         const logDateStr = log.date.slice(0, 10);
+                         return logDateStr >= reportStartDate && logDateStr <= reportEndDate;
                       }
-                      return "An-Naba";
-                   }
-                   return cleanName;
-                };
+                   }).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
-                // Format Hafalan displays to start and end verses with " : " separator, resolving Juz to Surah names
-                if (hafalanStartDisplay && hafalanStartDisplay !== "-") {
-                   if (hafalanStartDisplay.includes(':')) {
-                      const [name, range] = hafalanStartDisplay.split(':');
-                      let verse = range.trim();
-                      if (range.includes('-')) {
-                         verse = range.split('-')[0].trim();
-                      }
-                      const resolvedName = resolveSurahName(name, seed);
-                      hafalanStartDisplay = `${resolvedName} : ${verse}`;
+                   let hafalanStartDisplay = "";
+                   let hafalanEndDisplay = "";
+                   let tartiliStart = "";
+                   let tartiliEnd = "";
+
+                   const cleanDrillText = (text: string) => {
+                      if (!text) return "";
+                      return text.replace(/Drill Munaqosah\s+/gi, "").replace(/Drill Tartili\s+/gi, "");
+                   };
+
+                   const hafalanLogs = studentLogs.filter((log: any) => log.type === 'Hafalan');
+                   const hafalanLanjutLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
+
+                   if (hafalanLanjutLogs.length > 0) {
+                      hafalanStartDisplay = cleanDrillText(hafalanLanjutLogs[0].currentSurah);
+                      hafalanEndDisplay = cleanDrillText(hafalanLanjutLogs[hafalanLanjutLogs.length - 1].currentSurah);
                    } else {
-                      const resolvedName = resolveSurahName(hafalanStartDisplay, seed);
-                      hafalanStartDisplay = resolvedName;
+                      hafalanStartDisplay = "-";
+                      hafalanEndDisplay = "-";
                    }
-                } else {
-                   hafalanStartDisplay = "-";
-                }
 
-                if (hafalanEndDisplay && hafalanEndDisplay !== "-") {
-                   if (hafalanEndDisplay.includes(':')) {
-                      const [name, range] = hafalanEndDisplay.split(':');
-                      let verse = range.trim();
-                      if (range.includes('-')) {
-                         verse = range.split('-')[1].trim();
+                   const resolveSurahName = (rawName: string, studentSeed: number) => {
+                      const cleanName = rawName.trim();
+                      if (cleanName.startsWith("Juz")) {
+                         const match = cleanName.match(/Juz\s+(\d+)/i);
+                         if (match) {
+                            const juzNum = parseInt(match[1]);
+                            if (juzNum === 30) return surahs30[studentSeed % surahs30.length];
+                            if (juzNum === 29) return surahs29[studentSeed % surahs29.length];
+                            if (juzNum === 28) return surahs28[studentSeed % surahs28.length];
+                         }
+                         return "An-Naba";
                       }
-                      const resolvedName = resolveSurahName(name, seed);
-                      hafalanEndDisplay = `${resolvedName} : ${verse}`;
+                      return cleanName;
+                   };
+
+                   if (hafalanStartDisplay && hafalanStartDisplay !== "-") {
+                      if (hafalanStartDisplay.includes(':')) {
+                         const [name, range] = hafalanStartDisplay.split(':');
+                         let verse = range.trim();
+                         if (range.includes('-')) {
+                            verse = range.split('-')[0].trim();
+                         }
+                         const resolvedName = resolveSurahName(name, seed);
+                         hafalanStartDisplay = `${resolvedName} : ${verse}`;
+                      } else {
+                         const resolvedName = resolveSurahName(hafalanStartDisplay, seed);
+                         hafalanStartDisplay = resolvedName;
+                      }
                    } else {
-                      const resolvedName = resolveSurahName(hafalanEndDisplay, seed);
-                      hafalanEndDisplay = resolvedName;
+                      hafalanStartDisplay = "-";
                    }
-                } else {
-                   hafalanEndDisplay = "-";
-                }
 
-               // Calculate Drill Munaqosah (last Drill log for Hafalan in this period)
-               let drillMunaqosah = "-";
-               const hafalanDrillLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Drill');
-               if (hafalanDrillLogs.length > 0) {
-                  const lastDrillLog = hafalanDrillLogs[hafalanDrillLogs.length - 1];
-                  const drillJuz = lastDrillLog.currentJuz || 30;
-                  drillMunaqosah = `Drill Juz ${drillJuz}`;
-               }
+                   if (hafalanEndDisplay && hafalanEndDisplay !== "-") {
+                      if (hafalanEndDisplay.includes(':')) {
+                         const [name, range] = hafalanEndDisplay.split(':');
+                         let verse = range.trim();
+                         if (range.includes('-')) {
+                            verse = range.split('-')[1].trim();
+                         }
+                         const resolvedName = resolveSurahName(name, seed);
+                         hafalanEndDisplay = `${resolvedName} : ${verse}`;
+                      } else {
+                         const resolvedName = resolveSurahName(hafalanEndDisplay, seed);
+                         hafalanEndDisplay = resolvedName;
+                      }
+                   } else {
+                      hafalanEndDisplay = "-";
+                   }
 
-                // 2. Tartili Logs Calculation
-                const tartiliLogs = studentLogs.filter((log: any) => log.type === 'Tartili' && (!log.currentSurah || !log.currentSurah.includes('Gharib')));
-                const tartiliLanjutLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
+                   let drillMunaqosah = "-";
+                   const hafalanDrillLogs = hafalanLogs.filter((log: any) => log.jenisSetoran === 'Drill');
+                   if (hafalanDrillLogs.length > 0) {
+                      const lastDrillLog = hafalanDrillLogs[hafalanDrillLogs.length - 1];
+                      const drillJuz = lastDrillLog.currentJuz || 30;
+                      drillMunaqosah = `Drill Juz ${drillJuz}`;
+                   }
 
-                 if (tartiliLanjutLogs.length > 0) {
-                    const firstLog = tartiliLanjutLogs[0];
-                    const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
-                    
-                    const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
-                    const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
-                    let firstPage = firstLog.page || "1";
-                    let lastPage = lastLog.page || "1";
-                    
-                    if (firstPage.includes('-')) {
-                       firstPage = firstPage.split('-')[0].trim();
-                    }
-                    if (lastPage.includes('-')) {
-                       lastPage = lastPage.split('-').pop()?.trim() || lastPage;
-                    }
-                    
-                    tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
-                    tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
-                 } else {
-                   tartiliStart = "-";
-                   tartiliEnd = "-";
-                }
+                   const tartiliLogs = studentLogs.filter((log: any) => log.type === 'Tartili' && (!log.currentSurah || !log.currentSurah.includes('Gharib')));
+                   const tartiliLanjutLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Lanjut');
 
-               // Calculate Drill Tartili (last Drill log for Tartili in this period)
-               let drillTartili = "-";
-               const tartiliDrillLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Drill');
-               if (tartiliDrillLogs.length > 0) {
-                  const lastDrillLog = tartiliDrillLogs[tartiliDrillLogs.length - 1];
-                  const lastJilid = lastDrillLog.iqraLevel || student.iqraLevel || 1;
-                  drillTartili = `Drill Tartili Jilid ${lastJilid}`;
-               }
+                   if (tartiliLanjutLogs.length > 0) {
+                      const firstLog = tartiliLanjutLogs[0];
+                      const lastLog = tartiliLanjutLogs[tartiliLanjutLogs.length - 1];
+                      
+                      const firstJilid = firstLog.iqraLevel || student.iqraLevel || 1;
+                      const lastJilid = lastLog.iqraLevel || student.iqraLevel || 1;
+                      let firstPage = firstLog.page || "1";
+                      let lastPage = lastLog.page || "1";
+                      
+                      if (firstPage.includes('-')) {
+                         firstPage = firstPage.split('-')[0].trim();
+                      }
+                      if (lastPage.includes('-')) {
+                         lastPage = lastPage.split('-').pop()?.trim() || lastPage;
+                      }
+                      
+                      tartiliStart = `Jilid ${firstJilid} Hal. ${firstPage}`;
+                      tartiliEnd = `Jilid ${lastJilid} Hal. ${lastPage}`;
+                   } else {
+                      tartiliStart = "-";
+                      tartiliEnd = "-";
+                   }
 
-               // 3. Gharib Logs Calculation
-               const studentGharibLogs = studentLogs.filter((log: any) => 
-                  log.type === 'Tartili' && 
-                  log.currentSurah && 
-                  log.currentSurah.includes('Gharib')
-               );
-               
-               let gharib = "-";
-               if (studentGharibLogs.length > 0) {
-                  const lastGharibLog = studentGharibLogs[studentGharibLogs.length - 1];
-                  const cleanGharib = lastGharibLog.currentSurah
-                     .replace(/Drill Gharib\s+/gi, "")
-                     .replace(/Gharib\s+/gi, "")
-                     .trim();
-                     
-                  let statusLabel = "";
-                  if (lastGharibLog.status === 'Mumtaz') statusLabel = "Sangat Baik";
-                  else if (lastGharibLog.status === 'Jayyid Jiddan' || lastGharibLog.status === 'Jayyid') statusLabel = "Baik";
-                  else if (lastGharibLog.status === 'Perlu Bimbingan') statusLabel = "Cukup";
-                  
-                  gharib = statusLabel ? `${cleanGharib} - ${statusLabel}` : cleanGharib;
-               }
+                   let drillTartili = "-";
+                   const tartiliDrillLogs = tartiliLogs.filter((log: any) => log.jenisSetoran === 'Drill');
+                   if (tartiliDrillLogs.length > 0) {
+                      const lastDrillLog = tartiliDrillLogs[tartiliDrillLogs.length - 1];
+                      const lastJilid = lastDrillLog.iqraLevel || student.iqraLevel || 1;
+                      drillTartili = `Drill Tartili Jilid ${lastJilid}`;
+                   }
 
-               return {
-                  ...student,
-                  hafalanStart: cleanDrillText(hafalanStartDisplay),
-                  hafalanEnd: cleanDrillText(hafalanEndDisplay),
-                  drillMunaqosah: drillMunaqosah,
-                  tartiliStart: cleanDrillText(tartiliStart),
-                  tartiliEnd: cleanDrillText(tartiliEnd),
-                  gharib: gharib,
-                  drillTartili: drillTartili
-               };
-            });
+                   const studentGharibLogs = studentLogs.filter((log: any) => 
+                      log.type === 'Tartili' && 
+                      log.currentSurah && 
+                      log.currentSurah.includes('Gharib')
+                   );
+                   
+                   let gharib = "-";
+                   if (studentGharibLogs.length > 0) {
+                      const lastGharibLog = studentGharibLogs[studentGharibLogs.length - 1];
+                      const cleanGharib = lastGharibLog.currentSurah
+                         .replace(/Drill Gharib\s+/gi, "")
+                         .replace(/Gharib\s+/gi, "")
+                         .trim();
+                         
+                      let statusLabel = "";
+                      if (lastGharibLog.status === 'Mumtaz') statusLabel = "Sangat Baik";
+                      else if (lastGharibLog.status === 'Jayyid Jiddan' || lastGharibLog.status === 'Jayyid') statusLabel = "Baik";
+                      else if (lastGharibLog.status === 'Perlu Bimbingan') statusLabel = "Cukup";
+                      
+                      gharib = statusLabel ? `${cleanGharib} - ${statusLabel}` : cleanGharib;
+                   }
 
-            const downloadPDF = () => {
-               generateMonthlyReportPDF({
-                  logoUrl,
-                  reportFilterMode,
-                  reportMonth,
-                  reportStartDate,
-                  reportEndDate,
-                  reportClass,
-                  getDisplayMonthLabel,
-                  reportData
-               });
-            };
+                   return {
+                      ...student,
+                      hafalanStart: cleanDrillText(hafalanStartDisplay),
+                      hafalanEnd: cleanDrillText(hafalanEndDisplay),
+                      drillMunaqosah: drillMunaqosah,
+                      tartiliStart: cleanDrillText(tartiliStart),
+                      tartiliEnd: cleanDrillText(tartiliEnd),
+                      gharib: gharib,
+                      drillTartili: drillTartili
+                   };
+                });
+             };
 
-            const downloadDocx = () => {
-               generateMonthlyReportDocx({
-                  logoUrl,
-                  reportFilterMode,
-                  reportMonth,
-                  reportStartDate,
-                  reportEndDate,
-                  reportClass,
-                  getDisplayMonthLabel,
-                  reportData
-               });
-            };
+             const reportData = computeReportDataForClass(reportClass);
 
-            return (
-               <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full animate-in fade-in duration-500">
-                  {/* Sticky Container Wrapper */}
-                  <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:from-[#121F18] dark:to-[#1A2E24]/30 p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-emerald-400 dark:border-[#1A2E24] flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none transition-all duration-300 no-print">
-                     <Header
-                        user={user}
-                        onMenuClick={() => setIsSidebarOpen(true)}
-                        notifications={notifications}
-                        onDismissNotification={handleDismissNotification}
-                        onSearchClick={showQuickActions ? handleSearchClick : undefined}
-                        flat={true}
-                        title="Laporan Bulanan"
-                        subtitle="Pilih periode dan kelas untuk melihat laporan kemajuan hafalan."
-                        onRefresh={handleRefreshData}
-                        isRefreshing={isRefreshing}
-                        actionButton={
-                           <div className="flex items-center gap-2">
-                              <button
-                                 onClick={downloadPDF}
-                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
-                              >
-                                 <Download size={18} />
-                                 <span>Unduh PDF</span>
-                              </button>
-                              <button
-                                 onClick={downloadDocx}
-                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap"
-                              >
-                                 <FileText size={18} />
-                                 <span>Unduh Word (.docx)</span>
-                              </button>
-                           </div>
-                        }
-                     />
+             const getAllClassesReportData = () => {
+                const classList = Array.from(new Set(students.map(s => s.class))).sort();
+                return classList.map(cls => ({
+                   className: cls,
+                   reportData: computeReportDataForClass(cls)
+                })).filter(c => c.reportData.length > 0);
+             };
 
-                  </div>
+             const downloadPDF = () => {
+                generateMonthlyReportPDF({
+                   logoUrl,
+                   reportFilterMode,
+                   reportMonth,
+                   reportStartDate,
+                   reportEndDate,
+                   reportClass,
+                   getDisplayMonthLabel,
+                   reportData
+                });
+             };
+
+             const downloadDocx = () => {
+                generateMonthlyReportDocx({
+                   logoUrl,
+                   reportFilterMode,
+                   reportMonth,
+                   reportStartDate,
+                   reportEndDate,
+                   reportClass,
+                   getDisplayMonthLabel,
+                   reportData
+                });
+             };
+
+             const downloadAllClassesPDF = () => {
+                generateAllClassesMonthlyReportPDF({
+                   logoUrl,
+                   reportFilterMode,
+                   reportMonth,
+                   reportStartDate,
+                   reportEndDate,
+                   getDisplayMonthLabel,
+                   allClassesData: getAllClassesReportData()
+                });
+             };
+
+             const downloadAllClassesDocx = () => {
+                generateAllClassesMonthlyReportDocx({
+                   logoUrl,
+                   reportFilterMode,
+                   reportMonth,
+                   reportStartDate,
+                   reportEndDate,
+                   getDisplayMonthLabel,
+                   allClassesData: getAllClassesReportData()
+                });
+             };
+
+             return (
+                <div className="space-y-6 lg:space-y-0 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full animate-in fade-in duration-500">
+                   {/* Sticky Container Wrapper */}
+                   <div className="sticky top-4 z-30 bg-gradient-to-br from-white to-emerald-50/60 dark:from-[#121F18] dark:to-[#1A2E24]/30 p-6 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-emerald-400 dark:border-[#1A2E24] flex justify-between items-center mt-4 sm:mt-6 mb-8 flex-none transition-all duration-300 no-print">
+                      <Header
+                         user={user}
+                         onMenuClick={() => setIsSidebarOpen(true)}
+                         notifications={notifications}
+                         onDismissNotification={handleDismissNotification}
+                         onSearchClick={showQuickActions ? handleSearchClick : undefined}
+                         flat={true}
+                         title="Laporan Bulanan"
+                         subtitle="Pilih periode dan kelas untuk melihat laporan kemajuan hafalan."
+                         onRefresh={handleRefreshData}
+                         isRefreshing={isRefreshing}
+                         actionButton={
+                            <div className="flex flex-wrap items-center gap-2">
+                               <button
+                                  onClick={downloadPDF}
+                                  title={`Unduh PDF Kelas ${reportClass}`}
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                               >
+                                  <Download size={16} />
+                                  <span>PDF ({reportClass})</span>
+                               </button>
+                               <button
+                                  onClick={downloadDocx}
+                                  title={`Unduh Word (.docx) Kelas ${reportClass}`}
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium text-xs sm:text-sm rounded-lg transition-colors shadow-sm whitespace-nowrap"
+                               >
+                                  <FileText size={16} />
+                                  <span>Word ({reportClass})</span>
+                               </button>
+                               <button
+                                  onClick={downloadAllClassesPDF}
+                                  title="Unduh PDF untuk Seluruh Kelas"
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-medium text-xs sm:text-sm rounded-lg transition-colors shadow-sm whitespace-nowrap border border-emerald-600"
+                               >
+                                  <Download size={16} />
+                                  <span>PDF (Semua Kelas)</span>
+                               </button>
+                               <button
+                                  onClick={downloadAllClassesDocx}
+                                  title="Unduh Word (.docx) untuk Seluruh Kelas"
+                                  className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs sm:text-sm rounded-lg transition-colors shadow-sm whitespace-nowrap border border-slate-700"
+                               >
+                                  <FileText size={16} />
+                                  <span>Word (Semua Kelas)</span>
+                               </button>
+                            </div>
+                         }
+                      />
+                   </div>
 
                   {/* Report Controls - Hidden on Print */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col lg:flex-row justify-between items-center gap-4 no-print mb-6">
