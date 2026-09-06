@@ -1870,6 +1870,7 @@ function App() {
 
             const downloadDocx = () => {
                generateMonthlyReportDocx({
+                  logoUrl,
                   reportFilterMode,
                   reportMonth,
                   reportStartDate,

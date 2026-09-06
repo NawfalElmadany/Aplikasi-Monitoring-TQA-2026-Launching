@@ -10,11 +10,11 @@ import {
   AlignmentType,
   BorderStyle,
   PageOrientation,
-  Header,
-  Footer
+  ImageRun
 } from 'docx';
 
 export interface WordReportOptions {
+  logoUrl?: string;
   reportFilterMode: 'month' | 'range';
   reportMonth: string;
   reportStartDate: string;
@@ -33,7 +33,8 @@ export interface WordReportOptions {
   }>;
 }
 
-export const generateMonthlyReportDocx = ({
+export const generateMonthlyReportDocx = async ({
+  logoUrl,
   reportFilterMode,
   reportMonth,
   reportStartDate,
@@ -52,6 +53,39 @@ export const generateMonthlyReportDocx = ({
     ? getDisplayMonthLabel(reportMonth)
     : `${formatDateId(reportStartDate)} s/d ${formatDateId(reportEndDate)}`;
 
+  // Fetch logo image data as ArrayBuffer if logoUrl is provided
+  let logoImageRun: ImageRun | null = null;
+  if (logoUrl) {
+    try {
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      logoImageRun = new ImageRun({
+        data: arrayBuffer,
+        transformation: {
+          width: 55,
+          height: 55,
+        },
+        type: 'png',
+      });
+    } catch (e) {
+      console.warn('Could not load logo for DOCX report:', e);
+    }
+  }
+
+  const noBorder = {
+    style: BorderStyle.NONE,
+    size: 0,
+    color: 'FFFFFF',
+  };
+
+  const borderless = {
+    top: noBorder,
+    bottom: noBorder,
+    left: noBorder,
+    right: noBorder,
+  };
+
   const headerBorders = {
     top: { style: BorderStyle.SINGLE, size: 6, color: '059669' },
     bottom: { style: BorderStyle.SINGLE, size: 6, color: '059669' },
@@ -66,6 +100,127 @@ export const generateMonthlyReportDocx = ({
     right: { style: BorderStyle.SINGLE, size: 4, color: 'CBD5E1' },
   };
 
+  // Top Header Table (Logo + School info + Report info)
+  const topHeaderTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: borderless,
+    rows: [
+      new TableRow({
+        children: [
+          // Logo Cell
+          new TableCell({
+            width: { size: logoImageRun ? 10 : 0, type: WidthType.PERCENTAGE },
+            borders: borderless,
+            margins: { top: 0, bottom: 0, left: 0, right: 100 },
+            children: logoImageRun
+              ? [new Paragraph({ children: [logoImageRun], alignment: AlignmentType.LEFT })]
+              : [],
+          }),
+          // Agency Info Cell
+          new TableCell({
+            width: { size: logoImageRun ? 55 : 65, type: WidthType.PERCENTAGE },
+            borders: borderless,
+            margins: { top: 0, bottom: 0, left: 0, right: 100 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({
+                    text: 'MI AL IRSYAD KOTA MADIUN',
+                    bold: true,
+                    size: 26, // 13pt
+                    color: '059669', // Emerald-600
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({
+                    text: "Program Tahfidz Al-Qur'an (TQA)",
+                    bold: true,
+                    size: 20, // 10pt
+                    color: '1E293B',
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                  new TextRun({
+                    text: 'Jl. Diponegoro No. 112B Kota Madiun, Jawa Timur',
+                    size: 18, // 9pt
+                    color: '64748B',
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+            ],
+          }),
+          // Report Metadata Cell
+          new TableCell({
+            width: { size: 35, type: WidthType.PERCENTAGE },
+            borders: borderless,
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: 'LAPORAN CAPAIAN TQA',
+                    bold: true,
+                    size: 24, // 12pt
+                    color: '0F172A',
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: `Periode: ${periodeLabel}`,
+                    size: 18,
+                    color: '475569',
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: `Kelas: ${reportClass}`,
+                    bold: true,
+                    size: 18,
+                    color: '475569',
+                    font: 'Calibri'
+                  })
+                ]
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  // Green separator line below header
+  const headerDivider = new Paragraph({
+    spacing: { before: 100, after: 250 },
+    border: {
+      bottom: {
+        color: '059669',
+        space: 1,
+        style: BorderStyle.SINGLE,
+        size: 12, // 1.5pt solid emerald green line
+      },
+    },
+  });
+
+  // Main Data Table Headers
   const headers = [
     { text: 'No', width: 5, align: AlignmentType.CENTER },
     { text: 'Nama Siswa', width: 23, align: AlignmentType.LEFT },
@@ -142,6 +297,25 @@ export const generateMonthlyReportDocx = ({
     });
   });
 
+  const mainTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [headerRow, ...dataRows]
+  });
+
+  const footerParagraph = new Paragraph({
+    spacing: { before: 300 },
+    alignment: AlignmentType.RIGHT,
+    children: [
+      new TextRun({
+        text: `Dicetak pada: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+        italics: true,
+        size: 16,
+        color: '94A3B8',
+        font: 'Calibri'
+      })
+    ]
+  });
+
   const doc = new Document({
     sections: [
       {
@@ -159,102 +333,10 @@ export const generateMonthlyReportDocx = ({
           }
         },
         children: [
-          // Header Agency Info
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            children: [
-              new TextRun({
-                text: 'MI AL IRSYAD KOTA MADIUN',
-                bold: true,
-                size: 28, // 14pt
-                color: '059669', // Emerald-600
-                font: 'Calibri'
-              })
-            ]
-          }),
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            children: [
-              new TextRun({
-                text: "Program Tahfidz Al-Qur'an (TQA)",
-                bold: true,
-                size: 22, // 11pt
-                color: '1E293B',
-                font: 'Calibri'
-              })
-            ]
-          }),
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            spacing: { after: 200 },
-            children: [
-              new TextRun({
-                text: 'Jl. Diponegoro No. 112B Kota Madiun, Jawa Timur',
-                size: 18, // 9pt
-                color: '64748B',
-                font: 'Calibri'
-              })
-            ]
-          }),
-
-          // Title & Info Box
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({
-                text: 'LAPORAN CAPAIAN TQA',
-                bold: true,
-                size: 24, // 12pt
-                color: '0F172A',
-                font: 'Calibri'
-              })
-            ]
-          }),
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({
-                text: `Periode: ${periodeLabel}`,
-                size: 18,
-                color: '475569',
-                font: 'Calibri'
-              })
-            ]
-          }),
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            spacing: { after: 300 },
-            children: [
-              new TextRun({
-                text: `Kelas: ${reportClass}`,
-                bold: true,
-                size: 18,
-                color: '475569',
-                font: 'Calibri'
-              })
-            ]
-          }),
-
-          // Main Data Table
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [headerRow, ...dataRows]
-          }),
-
-          // Footer info
-          new Paragraph({
-            spacing: { before: 300 },
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({
-                text: `Dicetak pada: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-                italics: true,
-                size: 16,
-                color: '94A3B8',
-                font: 'Calibri'
-              })
-            ]
-          })
+          topHeaderTable,
+          headerDivider,
+          mainTable,
+          footerParagraph
         ]
       }
     ]
@@ -264,14 +346,13 @@ export const generateMonthlyReportDocx = ({
     ? `Laporan_TQA_${reportClass}_${reportMonth}.docx`
     : `Laporan_TQA_${reportClass}_Periode.docx`;
 
-  Packer.toBlob(doc).then(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
